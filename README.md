@@ -9,6 +9,7 @@
 - ``toposort.cpp``：拓扑排序
 
 ### 数据结构
+- ``Monotone Stack``：单调栈
 - ``UnionFind.cpp``：并查集（带大小）
 - ``Trie.cpp``：Trie/字典树，前缀匹配
 - ``Treearray``：树状数组，区间修改单点查询，离散化。
