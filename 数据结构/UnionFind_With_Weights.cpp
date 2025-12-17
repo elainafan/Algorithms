@@ -27,7 +27,6 @@ public:
 
     // 合并from和to，新增信息to-from=value
     // 若to和from不在一个集合，则返回true，否则返回是否与当前信息矛盾
-    // 
     bool merge(int from, int to, T value) {
         int x = get(from), t = get(to);
         if (x == y) return dis[from] - dis[to] == value;
