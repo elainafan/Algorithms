@@ -11,6 +11,7 @@
 ### 数据结构
 - ``Monotone Stack``：单调栈
 - ``UnionFind.cpp``：并查集（带大小）
+- ``UnionFind_With_Weights.cpp``：带权并查集
 - ``Trie.cpp``：Trie/字典树，前缀匹配
 - ``Treearray``：树状数组，区间修改单点查询，离散化。
 - ``SegmentTree``：线段树，区间修改单点查询，线段树二分。
