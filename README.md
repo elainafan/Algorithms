@@ -11,6 +11,9 @@
 ### 树论
 - ``LCA.cpp``：倍增法求最近公共祖先
 
+### 数学
+- ``Qpow.cpp``：快速幂
+
 ### 数据结构
 - ``Monotone Stack``：单调栈
 - ``UnionFind.cpp``：并查集（带大小）
