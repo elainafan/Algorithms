@@ -13,7 +13,8 @@
 
 ### 数学
 - ``Qpow.cpp``：快速幂
-- ``Sieve_E``：质数的埃氏筛法
+- ``Sieve_E.cpp``：质数的埃氏筛法
+- ``Bitmask.cpp``：常见位运算操作
 
 ### 数据结构
 - ``Monotone Stack``：单调栈
