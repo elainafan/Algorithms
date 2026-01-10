@@ -2,6 +2,9 @@
 
 作者还是菜鸡，因此没有收录太多板子，还在学习中，目前目录如下：
 
+### 动态规划
+- ``Bitmask.md``：状压DP常见题型，整理中
+
 ### 图论
 - ``Kruscal.cpp``：Kruscal算法，求MST。
 - ``Dijsktra.cpp``：Dijkstra算法，单源最短路。
@@ -15,6 +18,7 @@
 - ``Qpow.cpp``：快速幂
 - ``Sieve_E.cpp``：质数的埃氏筛法
 - ``Bitmask.cpp``：常见位运算操作
+- ``Prime_factorization.cpp``：质因数分解
 
 ### 数据结构
 - ``Monotone Stack``：单调栈
