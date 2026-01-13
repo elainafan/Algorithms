@@ -50,7 +50,7 @@ class SegmentTree {
         int res = find_first(node << 1, l, m, ql, qr, val);
         if (res != -1) return res;
         return find_first(node << 1 | 1, m + 1, r, ql, qr, val);
-    } 
+    } // 若遇到固定左端点的情况，需要使用全局变量（或者传入引用）记录前缀分段最大值，加一个被待求区间完全覆盖的剪枝
 
     int find_last(int node, int l, int r, int ql, int qr, T val) const {
         if (r < ql || l > qr) return -1;
