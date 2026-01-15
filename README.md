@@ -16,6 +16,7 @@
 
 ### 数学
 - ``Qpow.cpp``：快速幂
+- ``Mulpow.cpp``：矩阵快速幂
 - ``Sieve_E.cpp``：质数的埃氏筛法
 - ``Bitmask.cpp``：常见位运算操作
 - ``Prime_factorization.cpp``：质因数分解
