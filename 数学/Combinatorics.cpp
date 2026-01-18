@@ -23,7 +23,7 @@ auto init = [] {
 ll comb(int n, int m) { return m < 0 || m > n ? 0 : F[n] * INV_F[m] % MOD * INV_F[n - m] % MOD; }
 
 constexpr int MX = 31;
-int c[MX][MX];
+int c[MX][MX];  // 即为C(n,m),从n个数中取m个数
 auto init = [] {
     for (int i = 0; i < MX; i++) {
         c[i][0] = c[i][1] = 1;
@@ -32,4 +32,4 @@ auto init = [] {
         }
     }
     return 0;
-}  // 适用于MX较小的情况
+}();  // 适用于MX较小的情况
