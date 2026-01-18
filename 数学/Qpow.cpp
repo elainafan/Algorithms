@@ -1,3 +1,4 @@
+constexpr int MOD = 1e9 + 7;
 int mul(int x, int y) { return x * 1LL * y % MOD; }
 int qpow(int x, int y) {
     int z = 1;
@@ -9,4 +10,5 @@ int qpow(int x, int y) {
     return z;
 }  // 求x**y%MOD
 
-// 注意：当MOD为质数时， (x/y)%MOD=(x*(y**(MOD-2)))%MOD
+// 注意：当MOD为质数时， (x/y)%MOD=(x*(y**(MOD-2)))%MOD，即y在模MOD意义下的逆元为b^{-1} \equiv b^{p-2} mod p
+

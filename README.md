@@ -21,6 +21,7 @@
 - ``Bitmask.cpp``：常见位运算操作
 - ``Prime_factorization.cpp``：质因数分解
 - ``Divisors.cpp``：因数分解
+- ``Combinatorics.cpp``：组合数学预处理
 
 ### 数据结构
 - ``Monotone Stack``：单调栈
