@@ -26,7 +26,7 @@ constexpr int MX = 31;
 int c[MX][MX];  // 即为C(n,m),从n个数中取m个数
 auto init = [] {
     for (int i = 0; i < MX; i++) {
-        c[i][0] = c[i][1] = 1;
+        c[i][0] = c[i][i] = 1;
         for (int j = 1; j < i; j++) {
             c[i][j] = c[i - 1][j - 1] + c[i - 1][j];
         }
