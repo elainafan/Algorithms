@@ -1,6 +1,5 @@
 // 下面是维护多个版本的可持久化普通线段树
 class Node {
-    int l, r;                                               // 维护当前区间
     Node* lo;                                               // 左孩子
     Node* ro;                                               // 右孩子
     ll sum;                                                 // 总值
@@ -8,11 +7,11 @@ class Node {
     void maintain() { sum = merge_val(lo->sum, ro->sum); }  // 维护树
 
 public:
-    Node(int l, int r, Node* lo = nullptr, Node* ro = nullptr, ll sum = 0) : l(l), r(r), lo(lo), ro(ro), sum(sum) {}
+    Node(Node* lo = nullptr, Node* ro = nullptr, ll sum = 0) : lo(lo), ro(ro), sum(sum) {}
 
     // 建一个空树
     static Node* build(int l, int r) {
-        Node* o = new Node(l, r);
+        Node* o = new Node();
         if (l == r) return o;
         int mid = (l + r) >> 1;
         o->lo = build(l, mid);
@@ -22,42 +21,44 @@ public:
 
     // 根据数组a建树
     static Node* build(vector<ll>& a, int l, int r) {
-        Node* o = new Node(l, r);
+        Node* o = new Node;
         if (l == r) {
             o->sum = a[l];
             return o;
         }
         int mid = (l + r) >> 1;
-        o->lo = build(l, mid);
-        o->ro = build(mid + 1, r);
+        o->lo = build(a, l, mid);
+        o->ro = build(a, mid + 1, r);
         o->sum = o->lo->sum + o->ro->sum;
         return o;
     }
 
     // 将位置i的值更新为val
-    // 调用：node[r+1]=node[l]->update(i,val);
-    Node* update(int i, int val) {
-        Node* o = new Node(l, r, lo, ro, sum);
+    // 调用：node[r+1]=node[l]->update(0,n-1,i,val);
+    Node* update(int l, int r, int i, int val) {
+        Node* o = new Node(lo, ro, sum);
         if (l == r) {
             o->sum = val;
             return o;
         }
         int mid = (l + r) >> 1;
         if (i <= mid)
-            o->lo = o->lo->update(i, val);
+            o->lo = o->lo->update(l, mid, i, val);
         else
-            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                      // 更新后操作
+            o->ro = o->ro->update(mid + 1, r, i, val);  // 根据加入的值选择递归左孩子还是右孩子
+        o->maintain();                                  // 更新后操作
         return o;
     }
 
     // 查询[ql,qr]的和
-    // 调用：ll tem=Node::query(node[r],l,r,ql,qr);
+    // 调用：ll tem=Node::query(node[r],0,n-1,ql,qr);
     static ll query(Node* o, int l, int r, int ql, int qr) {
-        if (ql <= o->l && o->r <= qr) return o->sum;
-        int mid = (l + r) >> 1;
-        ll l_res = query(o->lo, l, mid, ql, qr);
-        ll r_res = query(o->ro, mid + 1, r, ql, qr);
+        if (ql <= l && r <= qr) return o->sum;
+        int m = (l + r) >> 1;
+        if (qr <= m) return query(o->lo, l, m, ql, qr);
+        if (ql > m) return query(o->ro, m + 1, r, ql, qr);
+        ll l_res = query(o->lo, l, m, ql, qr);
+        ll r_res = query(o->ro, m + 1, r, ql, qr);
         return l_res + r_res;
     }
 };
