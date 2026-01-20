@@ -25,6 +25,7 @@ public:
 
     // 加入下标为i，权值为val的元素
     // 通常调用为 node[i]=node[i-1]->add(tem,nums[i-1]);
+    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->add(tem,nums[i-1]);
     Node* add(int i, int val) {
         Node* o = new Node(l, r, lo, ro, cnt, sum);  // 先复制上一阶段的树
         if (l == r) {
