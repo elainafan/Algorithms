@@ -1,3 +1,68 @@
+// 下面是维护多个版本的可持久化普通线段树
+class Node {
+    int l, r;                                               // 维护当前区间
+    Node* lo;                                               // 左孩子
+    Node* ro;                                               // 右孩子
+    ll sum;                                                 // 总值
+    ll merge_val(ll x, ll y) { return x + y; }              // 根据具体情况修改
+    void maintain() { sum = merge_val(lo->sum, ro->sum); }  // 维护树
+
+public:
+    Node(int l, int r, Node* lo = nullptr, Node* ro = nullptr, ll sum = 0) : l(l), r(r), lo(lo), ro(ro), sum(sum) {}
+
+    // 建一个空树
+    static Node* build(int l, int r) {
+        Node* o = new Node(l, r);
+        if (l == r) return o;
+        int mid = (l + r) >> 1;
+        o->lo = build(l, mid);
+        o->ro = build(mid + 1, r);
+        return o;
+    }
+
+    // 根据数组a建树
+    static Node* build(vector<ll>& a, int l, int r) {
+        Node* o = new Node(l, r);
+        if (l == r) {
+            o->sum = a[l];
+            return o;
+        }
+        int mid = (l + r) >> 1;
+        o->lo = build(l, mid);
+        o->ro = build(mid + 1, r);
+        o->sum = o->lo->sum + o->ro->sum;
+        return o;
+    }
+
+    // 将位置i的值更新为val
+    // 调用：node[r+1]=node[l]->update(i,val);
+    Node* update(int i, int val) {
+        Node* o = new Node(l, r, lo, ro, sum);
+        if (l == r) {
+            o->sum = val;
+            return o;
+        }
+        int mid = (l + r) >> 1;
+        if (i <= mid)
+            o->lo = o->lo->update(i, val);
+        else
+            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
+        o->maintain();                      // 更新后操作
+        return o;
+    }
+
+    // 查询[ql,qr]的和
+    // 调用：ll tem=Node::query(node[r],l,r,ql,qr);
+    static ll query(Node* o, int l, int r, int ql, int qr) {
+        if (ql <= o->l && o->r <= qr) return o->sum;
+        int mid = (l + r) >> 1;
+        ll l_res = query(o->lo, l, mid, ql, qr);
+        ll r_res = query(o->ro, mid + 1, r, ql, qr);
+        return l_res + r_res;
+    }
+};
+
+// 下面是可持久化权值线段树，按道理说这才是真正的主席树
 class Node {
     int l, r;  // 维护当前节点的左右权值
     Node* lo;  // 当前节点的左孩子
@@ -24,9 +89,9 @@ public:
     }
 
     // 加入下标为i，权值为val的元素
-    // 通常调用为 node[i]=node[i-1]->add(tem,nums[i-1]);
-    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->add(tem,nums[i-1]);
-    Node* add(int i, int val) {
+    // 通常调用为 node[i]=node[i-1]->update(tem,nums[i-1]);
+    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->update(tem,nums[i-1]);
+    Node* update(int i, int val) {
         Node* o = new Node(l, r, lo, ro, cnt, sum);  // 先复制上一阶段的树
         if (l == r) {
             o->cnt++;
@@ -35,10 +100,10 @@ public:
         }  // 若叶节点则进行操作
         int mid = (l + r) >> 1;
         if (i <= mid)
-            o->lo = o->lo->add(i, val);
+            o->lo = o->lo->update(i, val);
         else
-            o->ro = o->ro->add(i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                   // 更新后操作
+            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
+        o->maintain();                      // 更新后操作
         return o;
     }
 
@@ -54,14 +119,14 @@ public:
     // 查询[l,r]中有多少个数<=i，这些数对应的元素和是多少
     // 调用方式为 auto tem=node[r]->query(node[l-1],i);
     pair<int, ll> query(Node* old, int i) {
-        if (r <= i) return {cnt - old->cnt, sum - old->sum}; // 如果完全包裹
-        auto [cnt, sum] = lo->query(old->lo, i); //  左子树查询
-        int mid = (l + r) >> 1; 
+        if (r <= i) return {cnt - old->cnt, sum - old->sum};  // 如果完全包裹
+        auto [cnt, sum] = lo->query(old->lo, i);              //  左子树查询
+        int mid = (l + r) >> 1;
         if (i > mid) {
             auto [c, s] = ro->query(old->ro, i);
             cnt += c;
             sum += s;
-        } // 右子树查询
+        }  // 右子树查询
         return {cnt, sum};
     }
 };
@@ -99,7 +164,9 @@ public:
     }
 
     // 加入下标为i，权值为val的元素
-    Node* add(int i, int val) {
+    // 通常调用为 node[i]=node[i-1]->update(tem,nums[i-1]);
+    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->update(tem,nums[i-1]);
+    Node* update(int i, int val) {
         Node* o = new Node(l, r, lo, ro, cnt, sum);  // 先复制上一阶段的树
         if (l == r) {
             o->cnt++;
@@ -108,10 +175,10 @@ public:
         }  // 若叶节点则进行操作
         int mid = (l + r) >> 1;
         if (i <= mid)
-            o->lo = o->lo->add(i, val);
+            o->lo = o->lo->update(i, val);
         else
-            o->ro = o->ro->add(i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                   // 更新后操作
+            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
+        o->maintain();                      // 更新后操作
         return o;
     }
 
@@ -156,7 +223,7 @@ public:
         for (int i = 1; i <= n; i++) {
             auto x = ranges::lower_bound(sorted, nums[i - 1]);
             int tem = x - sorted.begin();
-            node[i] = node[i - 1]->add(tem, nums[i - 1]);
+            node[i] = node[i - 1]->update(tem, nums[i - 1]);
         }
         for (auto p : queries) {
             int l = p[0], r = p[1];
