@@ -11,4 +11,4 @@ auto dfs = [&](this auto&& dfs, int x, int pa) -> int {
     return tem;
 };
 dfs(0, -1);
-return ans + 1;
+return ans; // 这里求的是边的个数，如果是点的个数需要加一
