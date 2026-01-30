@@ -39,3 +39,4 @@
 ### 字符串
 - ``kmp.cpp``：KMP算法，求border。
 - ``zfunc.cpp``：Zfunc/拓展kmp算法，求LCP。
+- ``Hashing.cpp``：字符串哈希。
