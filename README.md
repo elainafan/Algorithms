@@ -4,6 +4,7 @@
 
 ### 动态规划
 - ``Bitmask.md``：状压DP常见题型，整理中
+- ``Digit.cpp``：数位DP
 
 ### 图论
 - ``Kruscal.cpp``：Kruscal算法，求MST。
