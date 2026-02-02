@@ -31,7 +31,7 @@
 - ``UnionFind.cpp``：并查集（带大小）
 - ``UnionFind_With_Weights.cpp``：带权并查集
 - ``Trie.cpp``：Trie/字典树，前缀匹配
-- ``Treearray.cpp``：树状数组，单点你修改区间查询，离散化。
+- ``Treearray.cpp``：树状数组，单点修改区间查询，离散化。
 - ``SegmentTree.cpp``：线段树，单点修改区间查询，线段树二分。
 - ``LazySeg.cpp``：懒标记线段树，区间修改区间查询，线段树二分。
 - ``ChairmanTree.cpp``：可持久化权值线段树/主席树，单点修改，区间查询第k小
