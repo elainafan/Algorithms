@@ -18,7 +18,7 @@ class Trie {
     string findpre(string word) {
         Node* cur = root;
         for (int i = 0; i < word.size(); i++) {
-            char c = word[i] - 'a';
+            int c = word[i] - 'a';
             if (!cur->son[c]) return "";
             cur = cur->son[c];
             if (cur->endcnt > 0) return word.substr(0, i + 1);
@@ -178,5 +178,69 @@ public:
             cur->pre--;
         }
         cur->endcnt--;
+    }
+};
+
+// Trie变式，同时检索前缀和后缀
+
+const int UND = '#';
+struct Node {
+    unordered_map<int, Node*> son;
+    int idx = -1;
+};
+class Trie {
+    Node* root = new Node();
+    void destory(Node* node) {
+        if (!node) return;
+        for (auto [_, son] : node->son) destory(son);
+        delete node;
+    }
+
+public:
+    // 析构函数
+    ~Trie() { destory(root); }
+
+    void insert(const string& word, int idx) {
+        Node* cur = root;
+        int n = sz(word);
+        rep(i, 0, n - 1) {
+            Node* tem = cur;
+            rep(j, i, n - 1) {
+                int c = word[j] - 'a';
+                int tem2 = (c << 7) | UND;
+                if (!tem->son.count(tem2)) tem->son[tem2] = new Node();
+                tem = tem->son[tem2];
+                tem->idx = max(tem->idx, idx);
+            }
+            tem = cur;
+            rep(j, i, n - 1) {
+                int c = word[n - 1 - j] - 'a';
+                int tem2 = (UND << 7) | c;
+                if (!tem->son.count(tem2)) tem->son[tem2] = new Node();
+                tem = tem->son[tem2];
+                tem->idx = max(tem->idx, idx);
+            }
+            tem = cur;
+            int c1 = word[i] - 'a';
+            int c2 = word[n - 1 - i] - 'a';
+            int tem2 = (c1 << 7) | c2;
+            if (!cur->son.count(tem2)) cur->son[tem2] = new Node();
+            cur = cur->son[tem2];
+            cur->idx = max(cur->idx, idx);
+        }
+    }
+
+    int find(const string& pre, const string& suf) {
+        int m1 = sz(pre), m2 = sz(suf);
+        int m = max(m1, m2);
+        Node* cur = root;
+        rep(i, 0, m - 1) {
+            int c1 = (i <= m1 - 1) ? pre[i] - 'a' : UND;
+            int c2 = (i <= m2 - 1) ? suf[m2 - 1 - i] - 'a' : UND;
+            int tem2 = (c1 << 7) | c2;
+            if (!cur->son.count(tem2)) return -1;
+            cur = cur->son[tem2];
+        }
+        return cur->idx;
     }
 };
