@@ -25,6 +25,7 @@
 - ``Prime_factorization.cpp``：质因数分解
 - ``Divisors.cpp``：因数分解
 - ``Combinatorics.cpp``：组合数学预处理
+- ``Xorbasis.cpp``：线性异或基
 
 ### 数据结构
 - ``Monotone Stack``：单调栈
