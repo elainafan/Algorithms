@@ -58,7 +58,7 @@ class LazySegmentTree {
         T r_res = query(node << 1 | 1, m + 1, r, ql, qr);
         return merge_val(l_res, r_res);
     }  // 区间查找
-    int find_first(int node, int l, int r, int ql, int qr, T val) const {
+    int find_first(int node, int l, int r, int ql, int qr, T val) {
         if (r < ql || l > qr) return -1;
         if (tree[node] < val) return -1;
         if (l == r) return l;
@@ -69,7 +69,7 @@ class LazySegmentTree {
         return find_first(node << 1 | 1, m + 1, r, ql, qr, val);
     }  // 若遇到固定左端点的情况，需要使用全局变量（或者传入引用）记录前缀分段最大值，加一个被待求区间完全覆盖的剪枝
 
-    int find_last(int node, int l, int r, int ql, int qr, T val) const {
+    int find_last(int node, int l, int r, int ql, int qr, T val) {
         if (r < ql || l > qr) return -1;
         if (tree[node] < val) return -1;
         if (l == r) return l;
@@ -89,9 +89,9 @@ public:
     // 区间查询[ql,qr]
     T query(int ql, int qr) { return query(1, 0, n - 1, ql, qr); }
 
-    int find_first(int ql, int qr, T val) const { return find_first(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中第一个满足条件的下标
+    int find_first(int ql, int qr, T val) { return find_first(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中第一个满足条件的下标
 
-    int find_last(int ql, int qr, T val) const { return find_last(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中最后一个满足条件的下标
+    int find_last(int ql, int qr, T val) { return find_last(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中最后一个满足条件的下标
 };
 // 注：懒标记线段树无论做什么都需要pushdown
 // 此时其它与线段树二分同
