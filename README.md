@@ -28,6 +28,7 @@
 - ``Xorbasis.cpp``：线性异或基
 
 ### 数据结构
+- ``Block.cpp``：分块
 - ``Monotone Stack``：单调栈
 - ``UnionFind.cpp``：并查集（带大小）
 - ``UnionFind_With_Weights.cpp``：带权并查集
