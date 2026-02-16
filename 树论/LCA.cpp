@@ -54,3 +54,21 @@ public:
         return pa[x][0];
     }  // 得到最近公共祖先
 };
+
+// 简单的树上倍增模板
+void solve() {
+    int n;
+    cin >> n;
+    vi pa(n + 1);
+    vvl up(n + 1, vl(20, 0));
+    rep(i, 0, n) { up[i][0] = pa[i]; }
+    rep(j, 0, 19) {
+        rep(i, 1, n) {
+            int mid = up[i][j];
+            if (mid != 0) {
+                up[i][j + 1] = up[mid][j];
+            }
+        }
+    }
+    return ;
+}
