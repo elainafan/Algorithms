@@ -63,7 +63,7 @@ struct CartesianTree {
 // 使用示例
 CartesianTree<int, less<int>> ct;
 
-rep(i, 0, n - 1) { dt.add(i + 1, nums[i]); }
+rep(i, 0, n - 1) { ct.add(i + 1, nums[i]); }
 
 int root = ct.work(less<int>());
 rep(i, 1, n) {
