@@ -23,3 +23,16 @@ vector<int> kmp(const string& text, const string& pattern) {
     }
     return res;
 }
+
+auto kmp = [&](const string& pattern) -> vi {
+    int m = sz(pattern);
+    int cnt = 0;
+    vi pi(m);
+    rep(i, 1, m - 1) {
+        char b = pattern[i];
+        while (cnt && pattern[cnt] != b) cnt = pi[cnt - 1];
+        if (pattern[cnt] == b) cnt++;
+        pi[i] = cnt;
+    }
+    return pi;
+}
