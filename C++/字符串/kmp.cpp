@@ -35,4 +35,4 @@ auto kmp = [&](const string& pattern) -> vi {
         pi[i] = cnt;
     }
     return pi;
-}
+};
