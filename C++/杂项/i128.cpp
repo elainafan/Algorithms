@@ -1,18 +1,19 @@
-__int128 read() {
-    string s;
-    cin >> s;
-    __int128 x = 0;
-    int f = 1, i = 0;
-    if (s[0] == '-') f = -1, i = 1;
-    for (; i < s.size(); i++) x = x * 10 + (s[i] - '0');
-    return x * f;
+using i128 = __int128;
+
+// 重载输入运算符以支持__int128类型
+std::istream &operator>>(std::istream &is, __int128 &val) {
+    std::string s;
+    bool flag = true;
+    is >> s, val = 0;
+    if (s[0] == '-') flag = false, val = std::stoi(s.substr(0, 2)), s = s.substr(2);
+    for (char &c: s) val = val * 10 + (c - '0') * (!flag ? -1 : 1);
+    return is;
 }
 
-void print(__int128 x) {
-    if (x < 0) {
-        cout << '-';
-        x = -x;
-    }
-    if (x > 9) print(x / 10);
-    cout << (int)(x % 10);
+//重载输出运算符以支持__int128类型
+std::ostream &operator<<(std::ostream &os, __int128 val) {
+    if (val < 0) os << "-", val = -val;
+    if (val > 9) os << val / 10;
+    os << static_cast<char>(val % 10 + '0');
+    return os;
 }
