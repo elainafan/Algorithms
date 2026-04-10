@@ -27,6 +27,7 @@
 - ``Divisors.cpp``：因数分解
 - ``Combinatorics.cpp``：组合数学预处理
 - ``Xorbasis.cpp``：线性异或基
+- ``Phi.cpp``：预处理欧拉函数
 
 ### 数据结构
 - ``Block.cpp``：分块
