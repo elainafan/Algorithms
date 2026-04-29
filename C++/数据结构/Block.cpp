@@ -33,7 +33,7 @@ void solve() {
             }
             rep(i, idr * B, r) {
                 a[i] += val;
-                sum[i] += val;
+                sum[idr] += val;
             }
         }
     };
