@@ -191,3 +191,110 @@ public:
     // 区间查询[ql,qr]
     T query(int ql, int qr) { return query(1, 0, n - 1, ql, qr); }
 };
+
+// LC850:矩形面积并（扫描线）
+const ll MOD = 1e9 + 7;
+class SegmentTree {
+private:
+    struct Node {
+        int l, r;
+        int min_cover_len = 0;  // 区间内被覆盖的最小次数
+        int min_cover = 0;      // 区间内为最小次数的区间长度
+        int todo = 0;           // 懒标记
+    };
+
+    vector<Node> seg;
+
+    void maintain(int o) {
+        Node& lo = seg[o << 1];
+        Node& ro = seg[(o << 1) | 1];
+        int mn = min(lo.min_cover, ro.min_cover);
+        seg[o].min_cover = mn;
+        seg[o].min_cover_len = (lo.min_cover == mn ? lo.min_cover_len : 0) + (ro.min_cover == mn ? ro.min_cover_len : 0);
+    }  // 根据左右儿子的信息，更新当前节点的信息
+
+    void do_(int o, int v) {
+        seg[o].min_cover += v;
+        seg[o].todo += v;
+    }  // 仅更新节点信息，不下传懒标记
+
+    void pushdown(int o) {
+        int& v = seg[o].todo;
+        if (v) {
+            do_(o << 1, v);
+            do_(o << 1 | 1, v);
+            v = 0;
+        }
+    }  // 下传懒标记
+
+    void build(vi& xs, int o, int l, int r) {
+        seg[o].l = l;
+        seg[o].r = r;
+        if (l == r) {
+            seg[o].min_cover_len = xs[l + 1] - xs[l];
+            return;
+        }
+        int m = (l + r) >> 1;
+        build(xs, o << 1, l, m);
+        build(xs, o << 1 | 1, m + 1, r);
+        maintain(o);
+        return;
+    }
+
+    void update(int o, int l, int r, int v) {
+        if (l <= seg[o].l && seg[o].r <= r) {
+            do_(o, v);
+            return;
+        }
+        pushdown(o);
+        int m = (seg[o].l + seg[o].r) >> 1;
+        if (l <= m) update(o << 1, l, r, v);
+        if (m < r) update(o << 1 | 1, l, r, v);
+        maintain(o);
+    }
+
+public:
+    SegmentTree(vi& xs) {
+        unsigned n = sz(xs) - 1;  // 有这么多个差值
+        seg.resize(2 << bit_width(n - 1));
+        build(xs, 1, 0, n - 1);  // 根节点是1
+    }
+
+    void update(int l, int r, int v) { update(1, l, r, v); }
+
+    int get_uncovered_length() { return seg[1].min_cover ? 0 : seg[1].min_cover_len; }
+};
+class Solution {
+public:
+    int rectangleArea(vector<vector<int>>& rectangles) {
+        int n = sz(rectangles);
+        vi xs;
+        struct Event {
+            int y, lx, rx, d;
+        };
+        vector<Event> tem;
+        for (auto& p : rectangles) {
+            int lx = p[0], rx = p[2], ly = p[1], ry = p[3];
+            xs.push_back(lx);
+            xs.push_back(rx);
+            tem.emplace_back(ly, lx, rx, 1);
+            tem.emplace_back(ry, lx, rx, -1);
+        }
+        ranges::sort(xs);
+        xs.erase(unique(all(xs)), xs.end());
+        SegmentTree tree(xs);
+        sort(all(tem), [&](const Event& x, const Event& y) { return x.y < y.y; });
+        int m = sz(tem);
+        ll ans = 0;
+        rep(i, 0, m - 2) {
+            auto& [y, lx, rx, d] = tem[i];
+            int l = ranges::lower_bound(xs, lx) - xs.begin();
+            int r = ranges::lower_bound(xs, rx) - xs.begin() - 1;  // 注意点和区间的对应关系
+            tree.update(l, r, d);
+            int sum = xs.back() - xs[0] - tree.get_uncovered_length();
+            ans += 1LL * sum * (tem[i + 1].y - y);
+            ans %= MOD;
+        }
+        return ans % MOD;
+    }
+};
