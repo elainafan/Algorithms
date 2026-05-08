@@ -13,25 +13,29 @@ import math
 class UnionFind:
     def __init__(self, n: int):
         self.fa = list(range(n))
-        self.sz = [1] * n
-        self.cc = n
+        self.siz = [1] * n  # 集合大小
+        self.cc = n  # 连通块个数
 
-    def find(self, x: int) -> int:
+    def get(self, x: int) -> int:
         if self.fa[x] != x:
-            self.fa[x] = self.find(self.fa[x])
+            self.fa[x] = self.get(self.fa[x])
         return self.fa[x]
 
-    def is_same(self, x: int, y: int) -> bool:
-        return self.find(x) == self.find(y)
+    def find(self, x: int) -> int:
+        return self.get(x)
 
-    def merge(self, _from: int, _to: int) -> bool:
-        x, y = self.find(_from), self.find(_to)
+    def is_same(self, x: int, y: int) -> bool:
+        return self.get(x) == self.get(y)
+
+    def merge(self, from_: int, to: int) -> bool:
+        x, y = self.get(from_), self.get(to)
         if x == y:
             return False
         self.fa[x] = y
-        self.sz[y] += self.sz[x]
+        self.siz[y] += self.siz[x]
         self.cc -= 1
         return True
 
     def get_size(self, x: int) -> int:
-        return self.sz[x]
+        # 查询x所在集合大小
+        return self.siz[self.get(x)]

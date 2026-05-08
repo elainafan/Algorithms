@@ -31,5 +31,5 @@ def largestRectangleArea(nums: List[int]) -> int:
 
     maxx = 0
     for i in range(n):
-        maxx = max(maxx, nums[i] * (r[i] - l[i] + 1))
+        maxx = max(maxx, nums[i] * (r[i] - l[i] - 1))
     return maxx
