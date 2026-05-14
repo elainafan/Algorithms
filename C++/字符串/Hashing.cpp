@@ -1,52 +1,45 @@
-// 自定义 pair 的哈希函数，用于 unordered_map
-struct pair_hash {
-    inline size_t operator()(const pair<ll, ll>& v) const {
-        // 简单的组合哈希策略
-        return v.first * 31 + v.second;
+using ull = unsigned long long;
+
+ull splitmix64(ull x) {
+    x += 0x9e3779b97f4a7c15;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+    return x ^ (x >> 31);
+}
+
+struct custom_hash {
+    static const ull FIXED_RANDOM;
+
+    size_t operator()(ull x) const {
+        return splitmix64(x + FIXED_RANDOM);
     }
 };
 
-// 双哈希类
+const ull custom_hash::FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+
 struct StringHash {
-    // 第一组参数
-    static const ll MOD1 = 1e9 + 7;
-    static const ll BASE1 = 131;
+    static ull base() {
+        static ull b = splitmix64(chrono::steady_clock::now().time_since_epoch().count()) | 1;
+        return b;
+    }
 
-    // 第二组参数
-    static const ll MOD2 = 1e9 + 9;
-    static const ll BASE2 = 13331;
-
-    vector<ll> h1, p1;
-    vector<ll> h2, p2;
+    vector<ull> h, p;
 
     StringHash(const string& s) {
         int n = s.size();
-        h1.resize(n + 1, 0);
-        p1.resize(n + 1, 1);
-        h2.resize(n + 1, 0);
-        p2.resize(n + 1, 1);
-
+        h.assign(n + 1, 0);
+        p.assign(n + 1, 1);
         for (int i = 0; i < n; i++) {
-            // 哈希 1
-            h1[i + 1] = (h1[i] * BASE1 + s[i]) % MOD1;
-            p1[i + 1] = (p1[i] * BASE1) % MOD1;
-
-            // 哈希 2
-            h2[i + 1] = (h2[i] * BASE2 + s[i]) % MOD2;
-            p2[i + 1] = (p2[i] * BASE2) % MOD2;
+            h[i + 1] = h[i] * base() + (unsigned char)s[i] + 1;
+            p[i + 1] = p[i] * base();
         }
     }
 
-    // 获取 s[l...r] 的双哈希值 (闭区间，0-indexed)
-    pair<ll, ll> query(int l, int r) {
-        ll v1 = (h1[r + 1] - h1[l] * p1[r - l + 1]) % MOD1;
-        if (v1 < 0) v1 += MOD1;  // 关键：处理负数
-
-        ll v2 = (h2[r + 1] - h2[l] * p2[r - l + 1]) % MOD2;
-        if (v2 < 0) v2 += MOD2;  // 关键：处理负数
-
-        return {v1, v2};
+    // 获取 s[l...r] 的哈希值，闭区间，0-indexed
+    ull query(int l, int r) const {
+        return h[r + 1] - h[l] * p[r - l + 1];
     }
 };
 
-// 使用：unordered_map<pair<ll,ll>,int,pair_hash>ma;
+// 使用：StringHash hs(s); hs.query(l, r);
+// 使用：unordered_map<ull, int, custom_hash> ma;

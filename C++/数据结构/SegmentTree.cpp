@@ -1,8 +1,20 @@
+struct Info {
+    ll sum, pre, suf, ans;
+    Info(ll x = 0) : sum(x), pre(x), suf(x), ans(x) {}
+};
+Info operator+(const Info& a, const Info& b) {
+    Info c;
+    c.sum = a.sum + b.sum;
+    c.pre = max(a.pre, a.sum + b.pre);
+    c.suf = max(b.suf, b.sum + a.suf);
+    c.ans = max({a.ans, b.ans, a.suf + b.pre});
+    return c;
+}
 template <typename T>
 class SegmentTree {
     int n;
     vector<T> tree;
-    T merge_val(T a, T b) const { return max(a, b); }  // 合并子树
+    T merge_val(T a, T b) const { return a + b; }  // 合并子树
 
     void maintain(int node) {  // 维护整棵树
         tree[node] = merge_val(tree[node * 2], tree[node * 2 + 1]);
@@ -44,17 +56,18 @@ class SegmentTree {
 
     int find_first(int node, int l, int r, int ql, int qr, T val) const {
         if (r < ql || l > qr) return -1;
-        if (tree[node] < val) return -1;
+        if (tree[node].val < val) return -1;
         if (l == r) return l;
         int m = (l + r) >> 1;
         int res = find_first(node << 1, l, m, ql, qr, val);
         if (res != -1) return res;
         return find_first(node << 1 | 1, m + 1, r, ql, qr, val);
-    }  // 若遇到固定左端点的情况，需要使用全局变量（或者传入引用）记录前缀分段最大值，加一个被待求区间完全覆盖的剪枝
+    }
+    // 若固定左端点，需要记录前缀分段最大值，并加被待求区间完全覆盖的剪枝
 
     int find_last(int node, int l, int r, int ql, int qr, T val) const {
         if (r < ql || l > qr) return -1;
-        if (tree[node] < val) return -1;
+        if (tree[node].val < val) return -1;
         if (l == r) return l;
         int m = (l + r) >> 1;
         int res = find_last(node << 1 | 1, m + 1, r, ql, qr, val);
@@ -65,7 +78,11 @@ class SegmentTree {
 public:
     SegmentTree(int n, T init_val) : SegmentTree(vector<T>(n, init_val)) {}
 
-    SegmentTree(const vector<T>& a) : n(a.size()), tree(2 << bit_width(a.size() - 1)) { build(a, 1, 0, n - 1); }  // 传入一个数组维护
+    // 传入一个数组维护
+    SegmentTree(const vector<T>& a)
+        : n(a.size()), tree(2 << bit_width(a.size() - 1)) {
+        build(a, 1, 0, n - 1);
+    }
 
     void update(int i, T val) { update(1, 0, n - 1, i, val); }  // 更新i的值为val
 
@@ -73,9 +90,11 @@ public:
 
     T get(int i) const { return query(1, 0, n - 1, i, i); }  // 取出i处的值
 
-    int find_first(int ql, int qr, T val) const { return find_first(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中第一个满足条件的下标
+    // 查询[ql,qr]中第一个满足条件的下标
+    int find_first(int ql, int qr, T val) const { return find_first(1, 0, n - 1, ql, qr, val); }
 
-    int find_last(int ql, int qr, T val) const { return find_last(1, 0, n - 1, ql, qr, val); }  // 查询[ql,qr]中最后一个满足条件的下标
+    // 查询[ql,qr]中最后一个满足条件的下标
+    int find_last(int ql, int qr, T val) const { return find_last(1, 0, n - 1, ql, qr, val); }
 };
 
 // CF1906F

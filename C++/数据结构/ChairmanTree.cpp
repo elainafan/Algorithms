@@ -1,246 +1,98 @@
-// 下面是维护多个版本的可持久化普通线段树
-class Node {
-    Node* lo;                                               // 左孩子
-    Node* ro;                                               // 右孩子
-    ll sum;                                                 // 总值
-    ll merge_val(ll x, ll y) { return x + y; }              // 根据具体情况修改
-    void maintain() { sum = merge_val(lo->sum, ro->sum); }  // 维护树
+using ll = long long;
 
-public:
-    Node(Node* lo = nullptr, Node* ro = nullptr, ll sum = 0) : lo(lo), ro(ro), sum(sum) {}
+struct ChairmanTree {
+    struct Node {
+        int ls = 0, rs = 0, cnt = 0;
+        ll sum = 0;
+    };
 
-    // 建一个空树
-    static Node* build(int l, int r) {
-        Node* o = new Node();
-        if (l == r) return o;
-        int mid = (l + r) >> 1;
-        o->lo = build(l, mid);
-        o->ro = build(mid + 1, r);
-        return o;
-    }
+    vector<Node> tr;
+    vector<int> root;
+    vector<int> vals;
 
-    // 根据数组a建树
-    static Node* build(vector<ll>& a, int l, int r) {
-        Node* o = new Node;
-        if (l == r) {
-            o->sum = a[l];
-            return o;
-        }
-        int mid = (l + r) >> 1;
-        o->lo = build(a, l, mid);
-        o->ro = build(a, mid + 1, r);
-        o->sum = o->lo->sum + o->ro->sum;
-        return o;
-    }
+    ChairmanTree(const vector<int>& a) {
+        vals = a;
+        sort(vals.begin(), vals.end());
+        vals.erase(unique(vals.begin(), vals.end()), vals.end());
 
-    // 将位置i的值更新为val
-    // 调用：node[r+1]=node[l]->update(0,n-1,i,val);
-    Node* update(int l, int r, int i, int val) {
-        Node* o = new Node(lo, ro, sum);
-        if (l == r) {
-            o->sum = val;
-            return o;
-        }
-        int mid = (l + r) >> 1;
-        if (i <= mid)
-            o->lo = o->lo->update(l, mid, i, val);
-        else
-            o->ro = o->ro->update(mid + 1, r, i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                                  // 更新后操作
-        return o;
-    }
-
-    // 查询[ql,qr]的和
-    // 调用：ll tem=Node::query(node[r],0,n-1,ql,qr);
-    static ll query(Node* o, int l, int r, int ql, int qr) {
-        if (ql <= l && r <= qr) return o->sum;
-        int m = (l + r) >> 1;
-        if (qr <= m) return query(o->lo, l, m, ql, qr);
-        if (ql > m) return query(o->ro, m + 1, r, ql, qr);
-        ll l_res = query(o->lo, l, m, ql, qr);
-        ll r_res = query(o->ro, m + 1, r, ql, qr);
-        return l_res + r_res;
-    }
-};
-
-// 下面是可持久化权值线段树，按道理说这才是真正的主席树
-class Node {
-    int l, r;  // 维护当前节点的左右权值
-    Node* lo;  // 当前节点的左孩子
-    Node* ro;  // 当前节点的右孩子
-    int cnt;   // [l,r]中的元素个数
-    void maintain() {
-        cnt = lo->cnt + ro->cnt;
-        sum = lo->sum + ro->sum;
-    }  // 更新操作
-
-public:
-    ll sum;  // [l,r]中元素总和
-
-    Node(int l, int r, Node* lo = nullptr, Node* ro = nullptr, ll cnt = 0, ll sum = 0) : l(l), r(r), lo(lo), ro(ro), cnt(cnt), sum(sum) {}
-
-    // 建一棵空树
-    static Node* build(int l, int r) {
-        Node* o = new Node(l, r);
-        if (l == r) return o;
-        int mid = (l + r) >> 1;
-        o->lo = build(l, mid);
-        o->ro = build(mid + 1, r);
-        return o;
-    }
-
-    // 加入下标为i，权值为val的元素
-    // 通常调用为 node[i]=node[i-1]->update(tem,nums[i-1]);
-    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->update(tem,nums[i-1]);
-    Node* update(int i, int val) {
-        Node* o = new Node(l, r, lo, ro, cnt, sum);  // 先复制上一阶段的树
-        if (l == r) {
-            o->cnt++;
-            o->sum += val;
-            return o;
-        }  // 若叶节点则进行操作
-        int mid = (l + r) >> 1;
-        if (i <= mid)
-            o->lo = o->lo->update(i, val);
-        else
-            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                      // 更新后操作
-        return o;
-    }
-
-    // 找[l,r]中第k小的数
-    // 调用方式为 int tem=node[r]->kth(node[l-1],k);
-    int kth(Node* old, int k) {
-        if (l == r) return l;                        // 叶子则返回
-        int cnt_l = lo->cnt - old->lo->cnt;          // 左子树中的全部数量
-        if (k <= cnt_l) return lo->kth(old->lo, k);  // 如果小于则到左子树中招
-        return ro->kth(old->ro, k - cnt_l);          // 否则到右子树中找
-    }
-
-    // 查询[l,r]中有多少个数<=i，这些数对应的元素和是多少
-    // 调用方式为 auto tem=node[r]->query(node[l-1],i);
-    pair<int, ll> query(Node* old, int i) {
-        if (r <= i) return {cnt - old->cnt, sum - old->sum};  // 如果完全包裹
-        auto [cnt, sum] = lo->query(old->lo, i);              //  左子树查询
-        int mid = (l + r) >> 1;
-        if (i > mid) {
-            auto [c, s] = ro->query(old->ro, i);
-            cnt += c;
-            sum += s;
-        }  // 右子树查询
-        return {cnt, sum};
-    }
-};
-
-// 下面是一道典题，LC3762，主席树+中位数贪心+离散化
-
-#include <bits/stdc++.h>
-#define ll long long
-#define ull unsigned long long
-#define lowbit(x) (x & (-x))
-using namespace std;
-class Node {
-    int l, r;  // 维护当前节点的左右权值
-    Node* lo;  // 当前节点的左孩子
-    Node* ro;  // 当前节点的右孩子
-    int cnt;   // [l,r]中的元素个数
-    void maintain() {
-        cnt = lo->cnt + ro->cnt;
-        sum = lo->sum + ro->sum;
-    }  // 更新操作
-
-public:
-    ll sum;  // [l,r]中元素总和
-
-    Node(int l, int r, Node* lo = nullptr, Node* ro = nullptr, ll cnt = 0, ll sum = 0) : l(l), r(r), lo(lo), ro(ro), cnt(cnt), sum(sum) {}
-
-    // 建一棵空树
-    static Node* build(int l, int r) {
-        Node* o = new Node(l, r);
-        if (l == r) return o;
-        int mid = (l + r) >> 1;
-        o->lo = build(l, mid);
-        o->ro = build(mid + 1, r);
-        return o;
-    }
-
-    // 加入下标为i，权值为val的元素
-    // 通常调用为 node[i]=node[i-1]->update(tem,nums[i-1]);
-    // 若要在版本v上修改，直接 node[cnt+1]=node[v]->update(tem,nums[i-1]);
-    Node* update(int i, int val) {
-        Node* o = new Node(l, r, lo, ro, cnt, sum);  // 先复制上一阶段的树
-        if (l == r) {
-            o->cnt++;
-            o->sum += val;
-            return o;
-        }  // 若叶节点则进行操作
-        int mid = (l + r) >> 1;
-        if (i <= mid)
-            o->lo = o->lo->update(i, val);
-        else
-            o->ro = o->ro->update(i, val);  // 根据加入的值选择递归左孩子还是右孩子
-        o->maintain();                      // 更新后操作
-        return o;
-    }
-
-    // 找[l,r]中第k小的数
-    // 调用方式为 int tem=node[r]->kth(node[l-1],k);
-    int kth(Node* old, int k) {
-        if (l == r) return l;                        // 叶子则返回
-        int cnt_l = lo->cnt - old->lo->cnt;          // 左子树中的全部数量
-        if (k <= cnt_l) return lo->kth(old->lo, k);  // 如果小于则到左子树中招
-        return ro->kth(old->ro, k - cnt_l);          // 否则到右子树中找
-    }
-
-    // 查询[l,r]中有多少个数<=i，这些数对应的元素和是多少
-    // 调用方式为 auto tem=node[r]->query(node[l-1],i);
-    pair<int, ll> query(Node* old, int i) {
-        if (r <= i) return {cnt - old->cnt, sum - old->sum};  // 如果完全包裹
-        auto [cnt, sum] = lo->query(old->lo, i);              //  左子树查询
-        int mid = (l + r) >> 1;
-        if (i > mid) {
-            auto [c, s] = ro->query(old->ro, i);
-            cnt += c;
-            sum += s;
-        }  // 右子树查询
-        return {cnt, sum};
-    }
-};
-class Solution {
-public:
-    vector<long long> minOperations(vector<int>& nums, int k, vector<vector<int>>& queries) {
-        int n = nums.size();
-        vector<ll> res;
-        vector<int> pre(n + 1, 0);
-        for (int i = 2; i <= n; i++) {
-            pre[i] = pre[i - 1] + (!(nums[i - 1] % k == nums[i - 2] % k));
-        }
-        auto sorted = nums;
-        ranges::sort(sorted);
-        sorted.erase(unique(sorted.begin(), sorted.end()), sorted.end());
-        int m = sorted.size();
-        vector<Node*> node(n + 1);
-        node[0] = Node::build(0, m - 1);
+        int n = a.size();
+        tr.reserve((n + 1) * 20);
+        tr.push_back(Node());
+        root.assign(n + 1, 0);
+        root[0] = build(1, vals.size());
         for (int i = 1; i <= n; i++) {
-            auto x = ranges::lower_bound(sorted, nums[i - 1]);
-            int tem = x - sorted.begin();
-            node[i] = node[i - 1]->update(tem, nums[i - 1]);
+            int pos = lower_bound(vals.begin(), vals.end(), a[i - 1]) - vals.begin() + 1;
+            root[i] = add(root[i - 1], 1, vals.size(), pos, a[i - 1]);
         }
-        for (auto p : queries) {
-            int l = p[0], r = p[1];
-            if (pre[r + 1] != pre[l + 1]) {
-                res.push_back(-1);
-                continue;
-            }
-            int tem = node[r + 1]->kth(node[l], (r - l) / 2 + 1);
-            int tem2 = sorted[tem];
-            auto [x, y] = node[r + 1]->query(node[l], tem);
-            ll ans = 0;
-            ll tot = node[r + 1]->sum - node[l]->sum;
-            ans += 1LL * x * tem2 - y;
-            ans += tot - y - 1LL * (r - l + 1 - x) * tem2;
-            res.push_back(ans / k);
+    }
+
+    int build(int l, int r) {
+        int o = new_node();
+        if (l == r) return o;
+        int m = (l + r) >> 1;
+        tr[o].ls = build(l, m);
+        tr[o].rs = build(m + 1, r);
+        return o;
+    }
+
+    int add(int old, int l, int r, int p, int val) {
+        int o = copy_node(old);
+        tr[o].cnt++;
+        tr[o].sum += val;
+        if (l == r) return o;
+        int m = (l + r) >> 1;
+        if (p <= m) tr[o].ls = add(tr[old].ls, l, m, p, val);
+        else tr[o].rs = add(tr[old].rs, m + 1, r, p, val);
+        return o;
+    }
+
+    int kth(int l, int r, int k) const {
+        return vals[kth(root[l - 1], root[r], 1, vals.size(), k) - 1];
+    }
+
+    pair<int, ll> leq(int l, int r, int x) const {
+        int pos = upper_bound(vals.begin(), vals.end(), x) - vals.begin();
+        if (!pos) return {0, 0};
+        return query(root[l - 1], root[r], 1, vals.size(), pos);
+    }
+
+private:
+    int new_node() {
+        tr.push_back(Node());
+        return tr.size() - 1;
+    }
+
+    int copy_node(int old) {
+        tr.push_back(tr[old]);
+        return tr.size() - 1;
+    }
+
+    int kth(int old, int now, int l, int r, int k) const {
+        if (l == r) return l;
+        int left_cnt = tr[tr[now].ls].cnt - tr[tr[old].ls].cnt;
+        int m = (l + r) >> 1;
+        if (k <= left_cnt) return kth(tr[old].ls, tr[now].ls, l, m, k);
+        return kth(tr[old].rs, tr[now].rs, m + 1, r, k - left_cnt);
+    }
+
+    pair<int, ll> query(int old, int now, int l, int r, int qr) const {
+        if (r <= qr) return {tr[now].cnt - tr[old].cnt, tr[now].sum - tr[old].sum};
+        int m = (l + r) >> 1;
+        auto res = query(tr[old].ls, tr[now].ls, l, m, qr);
+        if (qr > m) {
+            auto t = query(tr[old].rs, tr[now].rs, m + 1, r, qr);
+            res.first += t.first;
+            res.second += t.second;
         }
         return res;
     }
 };
+
+// 使用：ChairmanTree ct(a);
+// ct.kth(l, r, k)：查询 1-indexed 区间 [l, r] 第 k 小的原值
+// ct.leq(l, r, x)：查询区间 [l, r] 内 <= x 的数量和总和
+//
+// vector<int> a(n);              // a 是 0-indexed 原数组
+// ChairmanTree ct(a);
+// int kth_val = ct.kth(l, r, k); // l, r, k 都按 1-indexed 传
+// auto [cnt, sum] = ct.leq(l, r, limit);
