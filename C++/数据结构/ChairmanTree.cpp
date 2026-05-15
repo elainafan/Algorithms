@@ -8,9 +8,9 @@ struct ChairmanTree {
 
     vector<Node> tr;
     vector<int> root;
-    vector<int> vals;
+    vector<ll> vals;
 
-    ChairmanTree(const vector<int>& a) {
+    ChairmanTree(const vector<ll>& a) {
         vals = a;
         sort(vals.begin(), vals.end());
         vals.erase(unique(vals.begin(), vals.end()), vals.end());
@@ -35,7 +35,7 @@ struct ChairmanTree {
         return o;
     }
 
-    int add(int old, int l, int r, int p, int val) {
+    int add(int old, int l, int r, int p, ll val) {
         int o = copy_node(old);
         tr[o].cnt++;
         tr[o].sum += val;
@@ -46,11 +46,11 @@ struct ChairmanTree {
         return o;
     }
 
-    int kth(int l, int r, int k) const {
+    ll kth(int l, int r, int k) const {
         return vals[kth(root[l - 1], root[r], 1, vals.size(), k) - 1];
     }
 
-    pair<int, ll> leq(int l, int r, int x) const {
+    pair<int, ll> leq(int l, int r, ll x) const {
         int pos = upper_bound(vals.begin(), vals.end(), x) - vals.begin();
         if (!pos) return {0, 0};
         return query(root[l - 1], root[r], 1, vals.size(), pos);
@@ -92,7 +92,7 @@ private:
 // ct.kth(l, r, k)：查询 1-indexed 区间 [l, r] 第 k 小的原值
 // ct.leq(l, r, x)：查询区间 [l, r] 内 <= x 的数量和总和
 //
-// vector<int> a(n);              // a 是 0-indexed 原数组
+// vector<ll> a(n);               // a 是 0-indexed 原数组
 // ChairmanTree ct(a);
-// int kth_val = ct.kth(l, r, k); // l, r, k 都按 1-indexed 传
+// ll kth_val = ct.kth(l, r, k);  // l, r, k 都按 1-indexed 传
 // auto [cnt, sum] = ct.leq(l, r, limit);
