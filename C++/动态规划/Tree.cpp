@@ -52,3 +52,58 @@ vector<int> lastMarkedNodes(vector<vector<int>>& edges) {
     return res2;
 }
 // 换根DP求每个节点为根的子树最大深度及其对应叶子
+
+// CF337D 给定多个标记点，求到所有标记点距离都不超过k的点数
+void solve() {
+    int n, x, y, m, k;
+    cin >> n >> m >> k;
+    vi tem(n);
+    rep(i, 0, m - 1) {
+        cin >> x;
+        tem[x - 1] = 1;
+    }
+    vvi ma(n);
+    rep(i, 1, n - 1) {
+        cin >> x >> y;
+        ma[x - 1].push_back(y - 1);
+        ma[y - 1].push_back(x - 1);
+    }
+    const int NEG = -1e9;
+    vi down(n, NEG), up(n, NEG);
+    vi mx1(n, NEG), mx2(n, NEG), id(n, -1);
+    auto upd = [&](int x, int val, int id2) -> void {
+        if (val > mx1[x]) {
+            mx2[x] = mx1[x];
+            mx1[x] = val;
+            id[x] = id2;
+        } else if (val > mx2[x]) {
+            mx2[x] = val;
+        }
+    };
+    auto dfs1 = [&](this auto&& dfs1, int x, int pa) -> void {
+        if (tem[x]) {
+            upd(x, 0, -1);
+        }
+        for (int& p : ma[x]) {
+            if (p == pa) continue;
+            dfs1(p, x);
+            if (down[p] != NEG) upd(x, down[p] + 1, p);
+        }
+        down[x] = mx1[x];
+    };
+    dfs1(0, -1);
+    auto dfs2 = [&](this auto&& dfs2, int x, int pa) -> void {
+        for (int& p : ma[x]) {
+            if (p == pa) continue;
+            if (up[x] != NEG) up[p] = max(up[p], up[x] + 1);
+            int tem2 = (id[x] == p ? mx2[x] : mx1[x]);
+            if (tem2 != NEG) up[p] = max(up[p], tem2 + 1);
+            dfs2(p, x);
+        }
+    };
+    dfs2(0, -1);
+    int ans = 0;
+    rep(i, 0, n - 1) { ans += (max(down[i], up[i]) <= k); }
+    cout << ans << endl;
+    return;
+}
