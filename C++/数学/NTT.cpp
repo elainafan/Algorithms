@@ -56,6 +56,22 @@ vi convolution(vi a, vi b) {
     return a;
 }
 
+vi polymul(vi& a, vi& b, int lim) {
+    vi c = convolution(a, b);
+    if (sz(c) > lim) c.resize(lim);
+    return c;
+}
+
+vi polypow(vi a, int y, int lim) {
+    vi res(1, 1);
+    while (y > 0) {
+        if (y & 1) res = polymul(res, a, lim);
+        y >>= 1;
+        if (y) a = polymul(a, a, lim);
+    }
+    return res;
+}
+
 /*
 使用示例：
 
