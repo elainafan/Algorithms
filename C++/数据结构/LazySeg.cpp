@@ -242,7 +242,7 @@ public:
     void update(int l, int r, int v) { update(1, l, r, v); }
 
     int get_uncovered_length() { return seg[1].min_cover ? 0 : seg[1].min_cover_len; }
-};
+};// 这个模板用的是左闭右开
 class Solution {
 public:
     int rectangleArea(vector<vector<int>>& rectangles) {
