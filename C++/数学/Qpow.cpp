@@ -1,7 +1,7 @@
-constexpr int MOD = 1e9 + 7;
-int mul(int x, int y) { return x * 1LL * y % MOD; }
-int qpow(int x, int y) {
-    int z = 1;
+constexpr ll MOD = 1e9 + 7;
+ll mul(ll x, ll y) { return x * y % MOD; }
+ll qpow(ll x, ll y) {
+    ll z = 1;
     while (y > 0) {
         if (y & 1) z = mul(z, x);
         x = mul(x, x);
