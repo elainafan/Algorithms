@@ -28,6 +28,7 @@
 - ``Bitmask.cpp``：常见位运算操作
 - ``Prime_factorization.cpp``：质因数分解
 - ``Divisors.cpp``：因数分解
+- ``NumberTheoryBlock.cpp``：数论分块/整除分块
 - ``Combinatorics.cpp``：组合数学预处理
 - ``FFT.cpp``：快速傅里叶变换，求整数多项式卷积
 - ``NTT.cpp``：快速数论变换，求多项式卷积
