@@ -74,6 +74,21 @@ class LazySegmentTree {
         maintain(node);
     }  // 区间更新[ql,qr]
 
+    void assign(int node, int l, int r, int p, const Info& v) {
+        if (l == r) {
+            info[node] = v;
+            tag[node] = Tag();
+            return;
+        }
+        pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        if (p <= m)
+            assign(node << 1, l, m, p, v);
+        else
+            assign(node << 1 | 1, m + 1, r, p, v);
+        maintain(node);
+    }  // 单点赋值
+
     Info query(int node, int l, int r, int ql, int qr) {
         if (ql <= l && r <= qr) return info[node];
         pushdown(node, l, r);
@@ -113,6 +128,8 @@ public:
     }
     // 更新[ql,qr]为f
     void update(int ql, int qr, const Tag& v) { update(1, 0, n - 1, ql, qr, v); }
+    // 单点赋值a[p]=v
+    void assign(int p, const Info& v) { assign(1, 0, n - 1, p, v); }
     // 区间查询[ql,qr]
     Info query(int ql, int qr) { return query(1, 0, n - 1, ql, qr); }
 
