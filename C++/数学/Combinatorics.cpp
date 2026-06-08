@@ -2,6 +2,7 @@ constexpr int MOD = 1e9 + 7;
 constexpr int MX = 1e5 + 1;
 ll F[MX];      // 预处理阶乘
 ll INV_F[MX];  // 预处理逆元
+ll mul(ll x, ll y) { return x * y % MOD; }
 ll qpow(ll x, int n) {
     ll res = 1;
     for (; n; n >>= 1) {
