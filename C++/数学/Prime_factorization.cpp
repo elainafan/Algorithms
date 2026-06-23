@@ -1,4 +1,4 @@
-constexpr int MX = 1e7 + 1;
+constexpr int MX = 1e5 + 1;
 int lpf[MX]; // 存储每个数的最小素因子，复杂度O(NloglogN)
 auto init = [] {
     for (int i = 2; i < MX; i++) {
