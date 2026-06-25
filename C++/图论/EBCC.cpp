@@ -83,6 +83,19 @@ struct EBCC {
         }
         return tree;
     }
+
+    // 建带原图边编号的桥树，tree[u] 中元素为 {v, edge_id}
+    vector<vector<pii>> build_tree_with_edge_id() {
+        vector<vector<pii>> tree(tot);
+        rep(id, 0, m - 1) {
+            if (!is_bridge[id]) continue;
+            int a = bel[edges[id].first];
+            int b = bel[edges[id].second];
+            tree[a].push_back({b, id});
+            tree[b].push_back({a, id});
+        }
+        return tree;
+    }
 };
 
 // 用法：
@@ -92,4 +105,5 @@ struct EBCC {
 // ebcc.is_bridge[id];           // 这条边是否为桥
 // ebcc.comps;                   // 每个边双的点集
 // vvi tree = ebcc.build_tree(); // 桥树
+// vector<vector<pii>> tree_id = ebcc.build_tree_with_edge_id(); // {to_bcc, 原图边编号}
 // 注意：重边不会被误判成桥，因为每条无向边都有独立 edge_id。
