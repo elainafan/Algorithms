@@ -262,11 +262,11 @@ struct SegmentTreeGraph {
 
 private:
     void build_out(int p, int l, int r) {
-        out_id[p] = new_node();
         if (l == r) {
-            add(out_id[p], l, 0);
+            out_id[p] = l;
             return;
         }
+        out_id[p] = new_node();
         int m = (l + r) / 2;
         build_out(p * 2, l, m);
         build_out(p * 2 + 1, m + 1, r);
@@ -275,11 +275,11 @@ private:
     }
 
     void build_in(int p, int l, int r) {
-        in_id[p] = new_node();
         if (l == r) {
-            add(l, in_id[p], 0);
+            in_id[p] = l;
             return;
         }
+        in_id[p] = new_node();
         int m = (l + r) / 2;
         build_in(p * 2, l, m);
         build_in(p * 2 + 1, m + 1, r);
