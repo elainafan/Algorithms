@@ -226,3 +226,112 @@ void solve() {
     rep(i, 0, q - 1) cout << ans[i] << endl;
     return;
 }
+
+// 线段树优化建图：原图点编号为 [0, n - 1]，区间均为闭区间 [l, r]
+// 支持 u -> [l, r]、[l, r] -> v，每次加边 O(log n)，建图 O(n)
+struct SegmentTreeGraph {
+    using i64 = long long;
+
+    int n;
+    vector<int> out_id, in_id;
+    vector<vector<pair<int, i64>>> g;
+
+    SegmentTreeGraph(int n) : n(n), out_id(4 * n), in_id(4 * n), g(n) {
+        build_out(1, 0, n - 1);
+        build_in(1, 0, n - 1);
+    }
+
+    int new_node() {
+        g.emplace_back();
+        return (int)g.size() - 1;
+    }
+
+    void add(int u, int v, i64 w) {
+        g[u].emplace_back(v, w);
+    }
+
+    // 单点 u 向区间 [l, r] 中的所有点连权值为 w 的边
+    void add_out(int u, int l, int r, i64 w) {
+        add_out(1, 0, n - 1, l, r, u, w);
+    }
+
+    // 区间 [l, r] 中的所有点向单点 v 连权值为 w 的边
+    void add_in(int l, int r, int v, i64 w) {
+        add_in(1, 0, n - 1, l, r, v, w);
+    }
+
+private:
+    void build_out(int p, int l, int r) {
+        out_id[p] = new_node();
+        if (l == r) {
+            add(out_id[p], l, 0);
+            return;
+        }
+        int m = (l + r) / 2;
+        build_out(p * 2, l, m);
+        build_out(p * 2 + 1, m + 1, r);
+        add(out_id[p], out_id[p * 2], 0);
+        add(out_id[p], out_id[p * 2 + 1], 0);
+    }
+
+    void build_in(int p, int l, int r) {
+        in_id[p] = new_node();
+        if (l == r) {
+            add(l, in_id[p], 0);
+            return;
+        }
+        int m = (l + r) / 2;
+        build_in(p * 2, l, m);
+        build_in(p * 2 + 1, m + 1, r);
+        add(in_id[p * 2], in_id[p], 0);
+        add(in_id[p * 2 + 1], in_id[p], 0);
+    }
+
+    void add_out(int p, int l, int r, int ql, int qr, int u, i64 w) {
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            add(u, out_id[p], w);
+            return;
+        }
+        int m = (l + r) / 2;
+        add_out(p * 2, l, m, ql, qr, u, w);
+        add_out(p * 2 + 1, m + 1, r, ql, qr, u, w);
+    }
+
+    void add_in(int p, int l, int r, int ql, int qr, int v, i64 w) {
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            add(in_id[p], v, w);
+            return;
+        }
+        int m = (l + r) / 2;
+        add_in(p * 2, l, m, ql, qr, v, w);
+        add_in(p * 2 + 1, m + 1, r, ql, qr, v, w);
+    }
+};
+
+/*
+用法：
+
+int n;
+cin >> n;
+
+SegmentTreeGraph graph(n);
+
+// 添加普通单向边 u -> v，边权为 w
+graph.add(u, v, w);
+
+// 添加 u -> [l, r]，即 u 向区间内每个点连一条权值为 w 的边
+graph.add_out(u, l, r, w);
+
+// 添加 [l, r] -> v，即区间内每个点向 v 连一条权值为 w 的边
+graph.add_in(l, r, v, w);
+
+// 建图完成后的邻接表，节点总数为 graph.g.size()
+auto& g = graph.g;
+// 在 g 上自行运行 Dijkstra、拓扑排序等图算法。
+// 原图节点仍是 [0, n - 1]，其余节点均为线段树辅助节点。
+
+原图节点编号为 [0, n - 1]，传入的区间为闭区间 [l, r]。
+普通边 O(1)，每次点连区间或区间连点 O(log n)。
+*/
