@@ -43,9 +43,10 @@
 - ``RollbackUnionFind.cpp``：回滚并查集，支持撤销合并
 - ``Trie.cpp``：Trie/字典树，前缀匹配
 - ``Treearray.cpp``：树状数组，单点修改区间查询，离散化。
-- ``SegmentTree.cpp``：线段树，单点修改区间查询，线段树二分。
-- ``LazySeg.cpp``：懒标记线段树，区间修改区间查询，线段树二分。
+- ``SegmentTree.cpp``：线段树与动态开点线段树，单点修改区间查询，线段树二分。
+- ``LazySeg.cpp``：懒标记线段树与动态开点懒标记线段树，区间修改区间查询，线段树二分。
 - ``ChairmanTree.cpp``：可持久化权值线段树/主席树，单点修改，区间查询第k小
+- ``ChthollyTree.cpp``：珂朵莉树，支持区间推平、区间修改、区间查询和区间第k小。
 
 ### 字符串
 - ``kmp.cpp``：KMP算法，求border。

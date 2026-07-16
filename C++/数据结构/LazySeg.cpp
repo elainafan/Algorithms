@@ -294,3 +294,195 @@ public:
         return ans % MOD;
     }
 };
+
+// 动态开点懒标记线段树
+struct Tag {
+    ll add = 0;  // 懒标记初始值
+
+    Tag(ll add = 0) : add(add) {}
+
+    bool empty() const { return add == 0; }
+
+    void apply(const Tag& t) {
+        add += t.add;
+    }  // 合并懒标记：先已有操作，再做t
+};
+
+struct Info {
+    ll sum = 0;
+
+    Info(ll sum = 0) : sum(sum) {}
+
+    void apply(const Tag& t, int l, int r) {
+        sum += t.add * (r - l + 1);
+    }  // 把懒标记作用到当前节点
+};
+
+Info operator+(const Info& a, const Info& b) {
+    return {a.sum + b.sum};
+}  // 合并两个Info
+
+bool operator<(const Info& a, const Info& b) {
+    return a.sum < b.sum;
+}  // 线段树二分用，不需要时可删
+
+template <typename Info, typename Tag>
+class DynamicLazySegmentTree {
+    struct Node {
+        int left = -1, right = -1;
+        Info info = Info();
+        Tag tag = Tag();
+    };
+
+    int n;
+    vector<Node> tree;
+
+    int new_node() {
+        tree.emplace_back();
+        return tree.size() - 1;
+    }
+
+    Info get_info(int node) const { return node == -1 ? Info() : tree[node].info; }
+
+    int left_child(int node) {
+        if (tree[node].left == -1) {
+            int child = new_node();
+            tree[node].left = child;
+        }
+        return tree[node].left;
+    }
+
+    int right_child(int node) {
+        if (tree[node].right == -1) {
+            int child = new_node();
+            tree[node].right = child;
+        }
+        return tree[node].right;
+    }
+
+    void apply(int node, int l, int r, const Tag& v) {
+        tree[node].info.apply(v, l, r);
+        tree[node].tag.apply(v);
+    }
+
+    void pushdown(int node, int l, int r) {
+        if (tree[node].tag.empty() || l == r) return;
+        Tag t = tree[node].tag;
+        int m = (l + r) >> 1;
+        int left = left_child(node);
+        int right = right_child(node);
+        apply(left, l, m, t);
+        apply(right, m + 1, r, t);
+        tree[node].tag = Tag();
+    }  // 把当前节点的懒标记下传
+
+    void maintain(int node) {
+        tree[node].info = get_info(tree[node].left) + get_info(tree[node].right);
+    }
+
+    void update(int node, int l, int r, int ql, int qr, const Tag& v) {
+        if (ql <= l && r <= qr) {
+            apply(node, l, r, v);
+            return;
+        }
+        pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        if (ql <= m) update(left_child(node), l, m, ql, qr, v);
+        if (qr > m) update(right_child(node), m + 1, r, ql, qr, v);
+        maintain(node);
+    }  // 区间更新[ql,qr]
+
+    void assign(int node, int l, int r, int p, const Info& v) {
+        if (l == r) {
+            tree[node].info = v;
+            tree[node].tag = Tag();
+            return;
+        }
+        pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        if (p <= m)
+            assign(left_child(node), l, m, p, v);
+        else
+            assign(right_child(node), m + 1, r, p, v);
+        maintain(node);
+    }  // 单点赋值
+
+    Info query(int node, int l, int r, int ql, int qr) {
+        if (node == -1) return Info();
+        if (ql <= l && r <= qr) return tree[node].info;
+        pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        if (qr <= m) return query(tree[node].left, l, m, ql, qr);
+        if (ql > m) return query(tree[node].right, m + 1, r, ql, qr);
+        return query(tree[node].left, l, m, ql, qr) + query(tree[node].right, m + 1, r, ql, qr);
+    }  // 区间查询
+
+    template <typename F>
+    int find_first(int node, int l, int r, int ql, int qr, F&& check) {
+        if (r < ql || l > qr || !check(get_info(node))) return -1;
+        if (l == r) return l;
+        if (node != -1) pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        int left = node == -1 ? -1 : tree[node].left;
+        int right = node == -1 ? -1 : tree[node].right;
+        int res = find_first(left, l, m, ql, qr, check);
+        if (res != -1) return res;
+        return find_first(right, m + 1, r, ql, qr, check);
+    }
+
+    template <typename F>
+    int find_last(int node, int l, int r, int ql, int qr, F&& check) {
+        if (r < ql || l > qr || !check(get_info(node))) return -1;
+        if (l == r) return l;
+        if (node != -1) pushdown(node, l, r);
+        int m = (l + r) >> 1;
+        int left = node == -1 ? -1 : tree[node].left;
+        int right = node == -1 ? -1 : tree[node].right;
+        int res = find_last(right, m + 1, r, ql, qr, check);
+        if (res != -1) return res;
+        return find_last(left, l, m, ql, qr, check);
+    }
+
+public:
+    DynamicLazySegmentTree(int n) : n(n), tree(1) {}
+
+    // 更新[ql,qr]
+    void update(int ql, int qr, const Tag& v) { update(0, 0, n - 1, ql, qr, v); }
+
+    // 单点赋值a[p]=v
+    void assign(int p, const Info& v) { assign(0, 0, n - 1, p, v); }
+
+    // 区间查询[ql,qr]
+    Info query(int ql, int qr) { return query(0, 0, n - 1, ql, qr); }
+
+    template <typename F>
+    int find_first(int ql, int qr, const F& check) {
+        return find_first(0, 0, n - 1, ql, qr, check);
+    }  // 查询[ql,qr]中第一个满足条件的下标
+
+    template <typename F>
+    int find_last(int ql, int qr, const F& check) {
+        return find_last(0, 0, n - 1, ql, qr, check);
+    }  // 查询[ql,qr]中最后一个满足条件的下标
+
+    int find_first(int ql, int qr, const Info& val) {
+        return find_first(ql, qr, [&](const Info& x) { return !(x < val); });
+    }
+
+    int find_last(int ql, int qr, const Info& val) {
+        return find_last(ql, qr, [&](const Info& x) { return !(x < val); });
+    }
+};
+
+/*
+用法：
+
+DynamicLazySegmentTree<Info, Tag> tree(1'000'000'001); // 维护[0, 1e9]
+tree.update(l, r, Tag(add));                           // 区间修改
+tree.assign(i, Info(val));                             // 单点赋值
+ll res = tree.query(l, r).sum;                         // 区间查询
+int first = tree.find_first(l, r, Info(val));          // 第一个满足条件的位置
+int last = tree.find_last(l, r, Info(val));            // 最后一个满足条件的位置
+
+每次操作时间复杂度O(log n)，空间复杂度O(操作次数 * log n)。
+*/

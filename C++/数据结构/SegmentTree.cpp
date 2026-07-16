@@ -335,3 +335,124 @@ auto& g = graph.g;
 原图节点编号为 [0, n - 1]，传入的区间为闭区间 [l, r]。
 普通边 O(1)，每次点连区间或区间连点 O(log n)。
 */
+
+// 动态开点线段树
+struct Info {
+    ll sum, pre, suf, ans;
+    Info(ll x = 0) : sum(x), pre(x), suf(x), ans(x) {}
+};
+Info operator+(const Info& a, const Info& b) {
+    Info c;
+    c.sum = a.sum + b.sum;
+    c.pre = max(a.pre, a.sum + b.pre);
+    c.suf = max(b.suf, b.sum + a.suf);
+    c.ans = max({a.ans, b.ans, a.suf + b.pre});
+    return c;
+}
+
+bool operator<(const Info& a, const Info& b) {
+    return a.sum < b.sum;
+}
+
+template <typename Info>
+class DynamicSegmentTree {
+    struct Node {
+        int left = -1, right = -1;
+        Info val = Info();
+    };
+
+    int n;
+    vector<Node> tree;
+
+    Info merge_val(Info a, Info b) const { return a + b; }  // 合并子树
+
+    int new_node() {
+        tree.emplace_back();
+        return tree.size() - 1;
+    }
+
+    Info get_val(int node) const { return node == -1 ? Info() : tree[node].val; }
+
+    void maintain(int node) { tree[node].val = merge_val(get_val(tree[node].left), get_val(tree[node].right)); }
+
+    void update(int node, int l, int r, int i, Info val) {
+        if (l == r) {
+            tree[node].val = val;
+            return;
+        }
+        int m = (l + r) / 2;
+        if (i <= m) {
+            if (tree[node].left == -1) {
+                int child = new_node();
+                tree[node].left = child;
+            }
+            update(tree[node].left, l, m, i, val);
+        } else {
+            if (tree[node].right == -1) {
+                int child = new_node();
+                tree[node].right = child;
+            }
+            update(tree[node].right, m + 1, r, i, val);
+        }
+        maintain(node);
+    }  // 更新i处的值为val
+
+    Info query(int node, int l, int r, int ql, int qr) const {
+        if (node == -1 || r < ql || l > qr) return Info();
+        if (ql <= l && r <= qr) return tree[node].val;
+        int m = (l + r) / 2;
+        Info l_res = query(tree[node].left, l, m, ql, qr);
+        Info r_res = query(tree[node].right, m + 1, r, ql, qr);
+        return merge_val(l_res, r_res);
+    }  // 查询[ql,qr]的值
+
+    int find_first(int node, int l, int r, int ql, int qr, Info val) const {
+        if (r < ql || l > qr || get_val(node) < val) return -1;
+        if (l == r) return l;
+        int m = (l + r) / 2;
+        int left = node == -1 ? -1 : tree[node].left;
+        int right = node == -1 ? -1 : tree[node].right;
+        int res = find_first(left, l, m, ql, qr, val);
+        if (res != -1) return res;
+        return find_first(right, m + 1, r, ql, qr, val);
+    }
+
+    int find_last(int node, int l, int r, int ql, int qr, Info val) const {
+        if (r < ql || l > qr || get_val(node) < val) return -1;
+        if (l == r) return l;
+        int m = (l + r) / 2;
+        int left = node == -1 ? -1 : tree[node].left;
+        int right = node == -1 ? -1 : tree[node].right;
+        int res = find_last(right, m + 1, r, ql, qr, val);
+        if (res != -1) return res;
+        return find_last(left, l, m, ql, qr, val);
+    }
+
+public:
+    DynamicSegmentTree(int n) : n(n), tree(1) {}
+
+    void update(int i, Info val) { update(0, 0, n - 1, i, val); }  // 更新i处的值为val
+
+    Info query(int ql, int qr) const { return query(0, 0, n - 1, ql, qr); }  // 查询[ql,qr]的值
+
+    Info get(int i) const { return query(i, i); }  // 取出i处的值
+
+    // 查询[ql,qr]中第一个满足条件的下标
+    int find_first(int ql, int qr, Info val) const { return find_first(0, 0, n - 1, ql, qr, val); }
+
+    // 查询[ql,qr]中最后一个满足条件的下标
+    int find_last(int ql, int qr, Info val) const { return find_last(0, 0, n - 1, ql, qr, val); }
+};
+
+/*
+用法：
+
+DynamicSegmentTree<Info> tree(1'000'000'001); // 维护[0, 1e9]
+tree.update(i, Info(val));                    // a[i] = val
+ll res = tree.query(l, r).sum;                // 查询[l, r]
+ll cur = tree.get(i).sum;                     // 查询a[i]
+int first = tree.find_first(l, r, Info(val)); // 第一个满足条件的位置
+int last = tree.find_last(l, r, Info(val));   // 最后一个满足条件的位置
+
+每次操作时间复杂度O(log n)，空间复杂度O(修改次数 * log n)。
+*/
