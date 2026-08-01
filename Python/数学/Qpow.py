@@ -1,17 +1,19 @@
 MOD = 10**9 + 7
 
 
-def qpow(x: int, y: int, mod: int = MOD) -> int:
+def mul(x: int, y: int) -> int:
+    return x * y % MOD
+
+
+def qpow(x: int, y: int) -> int:
     z = 1
-    x %= mod
-    while y:
+    while y > 0:
         if y & 1:
-            z = z * x % mod
-        x = x * x % mod
+            z = mul(z, x)
+        x = mul(x, x)
         y >>= 1
-    return z  # 求x**y%MOD
+    return z  # 求 x**y % MOD
 
 
-def inv(x: int, mod: int = MOD) -> int:
-    # 注意：当MOD为质数时， (x/y)%MOD=(x*(y**(MOD-2)))%MOD，即y在模MOD意义下的逆元为b^{-1} \equiv b^{p-2} mod p
-    return qpow(x, mod - 2, mod)
+# 注意：当 MOD 为质数时，(x/y) % MOD = x * y**(MOD-2) % MOD
+# 即 y 在模 MOD 意义下的逆元为 qpow(y, MOD - 2)

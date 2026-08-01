@@ -1,28 +1,23 @@
-# 拓扑排序
-
-from collections import defaultdict, deque, Counter
-from functools import cache
-from sortedcontainers import SortedSet, SortedDict, SortedList
-from typing import List, Tuple, Set
-from math import inf
-from heapq import heappop, heappush
+from collections import deque
+from typing import List  # noqa: UP035
 
 
-def topologicalSort(n: int, edges: List[List[int]]) -> List[int]:
+def toposort(n: int, edges: List[List[int]]) -> List[int]:  # noqa: UP006
     ma = [[] for _ in range(n)]
     deg = [0] * n
-    for x, y in edges:
-        ma[x].append(y)
-        ma[y].append(x)
+    for p in edges:
+        ma[p[0]].append(p[1])
+        deg[p[1]] += 1
+    q = deque()
+    for i in range(n):
+        if deg[i] == 0:
+            q.append(i)
     res = []
-    q = deque(i for i, d in enumerate(deg) if d == 0)
     while q:
-        x = q.popleft()
-        res.append(x)
-        for y in ma[x]:
-            deg[y] -= 1
-            if deg[y] == 0:
-                q.append(y)
-    if len(res) < n:
-        return []
+        node = q.popleft()
+        res.append(node)
+        for p in ma[node]:
+            deg[p] -= 1
+            if deg[p] == 0:
+                q.append(p)
     return res

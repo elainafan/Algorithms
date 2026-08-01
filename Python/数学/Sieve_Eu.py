@@ -1,16 +1,13 @@
-from typing import List, Tuple
+MX = 6 * 10**6 + 1
+pd = bytearray(MX)
+primes = []
 
-
-def linear_sieve(mx: int) -> Tuple[List[bool], List[int]]:
-    pd = [False] * mx
-    primes = []
-    for i in range(2, mx):
-        if not pd[i]:
-            primes.append(i)
-        for p in primes:
-            if i * p >= mx:
-                break
-            pd[i * p] = True
-            if i % p == 0:
-                break
-    return pd, primes
+for i in range(2, MX):
+    if not pd[i]:
+        primes.append(i)
+    for p in primes:
+        if p * i >= MX:
+            break
+        pd[i * p] = True
+        if i % p == 0:
+            break

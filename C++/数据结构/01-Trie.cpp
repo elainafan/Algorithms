@@ -1,145 +1,78 @@
-// 01-Trie：维护非负整数
-// 常用：max(x ^ y)、min(x ^ y)、删除、重复元素、统计 (x ^ y) < k、第 k 小 x ^ y
-// LOG 表示最高位，0 <= x < 2^(LOG+1)。int 常用 30，long long 常用 60。
-template<int LOG = 30>
-struct BinaryTrie {
-    struct Node {
-        int son[2];
-        int cnt;  // 子树内有多少个数
+// 01-Trie：所有数满足 0 <= x < 2^(LOG + 1)
+void solve() {
+    const int LOG = 30;  // long long 改成 60
+    vector<array<int, 2>> son(1);
+    vi cnt(1);
 
-        Node() : cnt(0) {
-            son[0] = son[1] = -1;
-        }
-    };
-
-    vector<Node> tr;
-
-    BinaryTrie() {
-        tr.push_back(Node());  // 0 是根
-    }
-
-    void clear() {
-        tr.clear();
-        tr.push_back(Node());
-    }
-
-    void insert(long long x) {
-        int u = 0;
-        tr[u].cnt++;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            if (tr[u].son[b] == -1) {
-                tr[u].son[b] = tr.size();
-                tr.push_back(Node());
+    auto insert = [&](ll x) -> void {
+        int cur = 0;
+        cnt[cur]++;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1;
+            if (!son[cur][b]) {
+                son[cur][b] = sz(son);
+                son.push_back({}), cnt.push_back(0);
             }
-            u = tr[u].son[b];
-            tr[u].cnt++;
+            cur = son[cur][b], cnt[cur]++;
         }
-    }
-
-    // 删除一个已经存在的 x；不确定存在时先 if (count(x))
-    void erase(long long x) {
-        int u = 0;
-        tr[u].cnt--;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            u = tr[u].son[b];
-            tr[u].cnt--;
+    };  // 插入整数 x
+    auto erase = [&](ll x) -> void {
+        int cur = 0;
+        cnt[cur]--;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1;
+            cur = son[cur][b], cnt[cur]--;
         }
-    }
-
-    int count(long long x) const {
-        int u = 0;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            int v = tr[u].son[b];
-            if (v == -1 || tr[v].cnt == 0) return 0;
-            u = v;
+    };  // 删除一个已存在的整数 x
+    auto count = [&](ll x) -> int {
+        int cur = 0;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1;
+            if (!son[cur][b] || !cnt[son[cur][b]]) return 0;
+            cur = son[cur][b];
         }
-        return tr[u].cnt;
-    }
-
-    // 返回 max(x ^ y)
-    long long max_xor(long long x) const {
-        if (tr[0].cnt == 0) return 0;
-        int u = 0;
-        long long ans = 0;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            int want = b ^ 1;
-            int v = tr[u].son[want];
-            if (v != -1 && tr[v].cnt > 0) {
-                ans |= 1LL << i;
-                u = v;
-            } else {
-                u = tr[u].son[b];
-            }
+        return cnt[cur];
+    };  // 查询整数 x 的出现次数
+    auto query = [&](ll x, bool mx = true) -> ll {
+        if (!cnt[0]) return -1;
+        int cur = 0;
+        ll ans = 0;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1, to = b ^ mx;
+            if (!son[cur][to] || !cnt[son[cur][to]]) to ^= 1;
+            ans |= 1LL * (b ^ to) << i;
+            cur = son[cur][to];
         }
         return ans;
-    }
-
-    // 返回 min(x ^ y)
-    long long min_xor(long long x) const {
-        if (tr[0].cnt == 0) return 0;
-        int u = 0;
-        long long ans = 0;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            int v = tr[u].son[b];
-            if (v != -1 && tr[v].cnt > 0) {
-                u = v;
-            } else {
-                ans |= 1LL << i;
-                u = tr[u].son[b ^ 1];
-            }
-        }
-        return ans;
-    }
-
-    // 统计已有 y 中，满足 (x ^ y) < k 的数量
-    long long count_xor_less(long long x, long long k) const {
-        int u = 0;
-        long long ans = 0;
-        for (int i = LOG; i >= 0 && u != -1; i--) {
-            int xb = (x >> i) & 1;
-            int kb = (k >> i) & 1;
+    };  // mx=true 求最大异或，mx=false 求最小异或，空树返回 -1
+    auto cntless = [&](ll x, ll k) -> ll {
+        if (k <= 0) return 0;
+        if (k >= (1LL << (LOG + 1))) return cnt[0];
+        int cur = 0;
+        ll ans = 0;
+        frep(i, LOG, 0) {
+            int xb = x >> i & 1, kb = k >> i & 1;
             if (kb) {
-                int same = tr[u].son[xb];
-                if (same != -1) ans += tr[same].cnt;
-                u = tr[u].son[xb ^ 1];
+                if (son[cur][xb]) ans += cnt[son[cur][xb]];
+                cur = son[cur][xb ^ 1];
             } else {
-                u = tr[u].son[xb];
+                cur = son[cur][xb];
             }
+            if (!cur) break;
         }
         return ans;
-    }
-
-    // 第 k 小的 x ^ y，k 从 1 开始；要求 1 <= k <= tr[0].cnt
-    long long kth_xor(long long x, int k) const {
-        int u = 0;
-        long long ans = 0;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            int same = tr[u].son[b];
-            int c = (same == -1 ? 0 : tr[same].cnt);
-            if (k <= c) {
-                u = same;
-            } else {
-                k -= c;
-                ans |= 1LL << i;
-                u = tr[u].son[b ^ 1];
-            }
+    };  // 统计满足 (x^y)<k 的 y 的数量
+    auto kth = [&](ll x, int k) -> ll {
+        int cur = 0;
+        ll ans = 0;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1, to = son[cur][b];
+            int siz = to ? cnt[to] : 0;
+            if (k > siz) k -= siz, ans |= 1LL << i, to = son[cur][b ^ 1];
+            cur = to;
         }
         return ans;
-    }
-};
+    };  // 查询第 k 小的 x^y，要求 1<=k<=cnt[0]
 
-// 用法：
-// BinaryTrie<30> trie;       // int 非负数
-// trie.insert(x);
-// if (trie.count(x)) trie.erase(x);
-// trie.max_xor(x);           // max(x ^ y)
-// trie.min_xor(x);           // min(x ^ y)
-// trie.count_xor_less(x, k); // count(y): (x ^ y) < k
-// trie.kth_xor(x, k);        // 第 k 小的 x ^ y
-// BinaryTrie<60> trie64;     // long long 非负数
+    // insert(x), erase(x), count(x), query(x), query(x,0), cntless(x,k), kth(x,k)
+}

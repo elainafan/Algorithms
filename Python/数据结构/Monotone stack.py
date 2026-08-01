@@ -1,12 +1,8 @@
-from typing import List, Tuple
-
-
-def nearest_less(nums: List[int]) -> Tuple[List[int], List[int]]:
+def largestRectangleArea(nums: list[int]) -> int:
     n = len(nums)
-    l = [-1] * n
     r = [n] * n
-    s = []
-
+    l = [-1] * n
+    s: list[int] = []
     for i in range(n - 1, -1, -1):
         while s and nums[s[-1]] >= nums[i]:
             s.pop()
@@ -23,12 +19,8 @@ def nearest_less(nums: List[int]) -> Tuple[List[int], List[int]]:
             l[i] = s[-1]
         s.append(i)
     # 求左边第一个小于的下标
-    return l, r
 
-
-def largestRectangleArea(nums: List[int]) -> int:
-    l, r = nearest_less(nums)
-    maxx = 0
-    for i, x in enumerate(nums):
-        maxx = max(maxx, x * (r[i] - l[i] - 1))
+    maxx = -(1 << 31)
+    for i in range(n):
+        maxx = max(maxx, nums[i] * (r[i] - l[i] - 1))
     return maxx

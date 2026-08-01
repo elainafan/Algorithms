@@ -1,30 +1,47 @@
-from typing import List
+from typing import List  # noqa: UP035
 
 
-def prefix_function(s: str) -> List[int]:
-    pi = [0] * len(s)
-    j = 0
-    for i in range(1, len(s)):
-        while j and s[i] != s[j]:
-            j = pi[j - 1]
-        if s[i] == s[j]:
-            j += 1
-        pi[i] = j
+def kmp(text: str, pattern: str) -> List[int]:  # noqa: UP006
+    m = len(pattern)
+    pi = [0] * m
+    cnt = 0
+    for i in range(1, m):
+        b = pattern[i]
+        while cnt and pattern[cnt] != b:
+            cnt = pi[cnt - 1]
+        if pattern[cnt] == b:
+            cnt += 1
+        pi[i] = cnt
+
+    res = []
+    cnt = 0
+    for i, b in enumerate(text):
+        while cnt and pattern[cnt] != b:
+            cnt = pi[cnt - 1]
+        if pattern[cnt] == b:
+            cnt += 1
+        if cnt == m:
+            res.append(i - m + 1)
+            cnt = pi[cnt - 1]
+    return res
+
+
+# C++ 中的第二份 kmp 与上面的函数重名，这里仅作最小改名
+def kmp_pi(pattern: str) -> List[int]:  # noqa: UP006
+    m = len(pattern)
+    cnt = 0
+    pi = [0] * m
+    for i in range(1, m):
+        b = pattern[i]
+        while cnt and pattern[cnt] != b:
+            cnt = pi[cnt - 1]
+        if pattern[cnt] == b:
+            cnt += 1
+        pi[i] = cnt
     return pi
 
 
-def kmp(text: str, pattern: str) -> List[int]:
-    if not pattern:
-        return list(range(len(text) + 1))
-    pi = prefix_function(pattern)
-    ans = []
-    j = 0
-    for i, ch in enumerate(text):
-        while j and ch != pattern[j]:
-            j = pi[j - 1]
-        if ch == pattern[j]:
-            j += 1
-        if j == len(pattern):
-            ans.append(i - len(pattern) + 1)
-            j = pi[j - 1]
-    return ans
+# 用法：
+# pos = kmp(text, pattern)  # pattern 在 text 中所有匹配位置，0-indexed
+# pi = kmp_pi(pattern)      # pattern 的前缀函数
+# 与 C++ 板子相同，pattern 约定为非空字符串

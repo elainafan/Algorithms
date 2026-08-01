@@ -1,63 +1,96 @@
-from dataclasses import dataclass
-from math import inf
-from typing import Callable, List
+import sys
 
 
-@dataclass
-class Node:
-    idx: int = 0  # 原数组下标
-    val: int = 0  # 权值
-    par: int = 0  # 父节点索引，子树大小
-    size: int = 0
-    left: int = 0  # 左儿子，右儿子
-    right: int = 0
-
-
+# 笛卡尔树，默认为大根堆
 class CartesianTree:
-    # 笛卡尔树，默认为大根堆
+    class Node:
+        def __init__(
+            self,
+            idx: int = 0,
+            val=0,
+            par: int = 0,
+            siz: int = 0,
+        ) -> None:
+            self.idx = idx  # 原数组下标
+            self.val = val  # 权值
+            self.par = par  # 父节点索引
+            self.siz = siz  # 子树大小
+            self.son = [0, 0]  # 左儿子，右儿子
 
-    def __init__(self, better: Callable[[int, int], bool] | None = None, sentinel: int | None = None):
-        self.better = better or (lambda a, b: a > b)
-        if sentinel is None:
-            sentinel = inf
-        self.t: List[Node] = [Node(val=sentinel)]
+    def __init__(self, comp=None) -> None:
+        self.inf = float("inf")
+        self.comp = comp if comp is not None else lambda x, y: x > y
+        self.t = []
+        self.init()
+
+    def init(self, comp=None) -> None:
+        if comp is not None:
+            self.comp = comp
+        comp = self.comp
+        self.t = [self.Node()]
+        if comp(-self.inf, self.inf):
+            self.t[0].val = -self.inf
+        else:
+            self.t[0].val = self.inf
         # 自动建立虚拟节点
 
-    def add(self, idx: int, val: int) -> None:
-        # 负责把元素加进末尾，需要使用1-based
-        self.t.append(Node(idx=idx, val=val))
+    # 负责把元素加进末尾，需要使用1-based
+    def add(self, idx: int, val, par: int = 0) -> None:
+        self.t.append(self.Node(idx, val, par))
 
-    def work(self) -> int:
+    def work(self, comp=None) -> int:
+        if comp is None:
+            comp = self.comp
+        sys.setrecursionlimit(max(sys.getrecursionlimit(), len(self.t) * 2 + 10))
         for i in range(1, len(self.t)):
             k = i - 1
-            while self.better(self.t[i].val, self.t[k].val):
+            while comp(self.t[i].val, self.t[k].val):
                 k = self.t[k].par
-            self.t[i].left = self.t[k].right
-            self.t[k].right = i
+            self.t[i].son[0] = self.t[k].son[1]
+            self.t[k].son[1] = i
             self.t[i].par = k
-            self.t[self.t[i].left].par = i
+            self.t[self.t[i].son[0]].par = i
+
         # 遍历，砍树枝
-
-        root = self.t[0].right
-
         def dfs(u: int) -> None:
-            if u == 0:
+            if not u:
                 return
-            dfs(self.t[u].left)
-            dfs(self.t[u].right)
-            self.t[u].size = 1 + self.t[self.t[u].left].size + self.t[self.t[u].right].size
+            self.t[u].siz = 1
+            dfs(self.ls(u))
+            dfs(self.rs(u))
+            self.t[u].siz += self.t[self.ls(u)].siz + self.t[self.rs(u)].siz
+
         # 进行一个dfs
+        dfs(self.t[0].son[1])
+        return self.t[0].son[1]
 
-        dfs(root)
-        return root
+    # 左边最远
+    def Left(self, p: int) -> int:
+        return p - self.size(self.ls(p))
 
-    def left_bound(self, p: int) -> int:
-        # 左边最远
-        return p - self.t[self.t[p].left].size
+    # 右边最远
+    def Right(self, p: int) -> int:
+        return p + self.size(self.rs(p))
 
-    def right_bound(self, p: int) -> int:
-        # 右边最远
-        return p + self.t[self.t[p].right].size
+    def size(self, p: int) -> int:
+        return self.t[p].siz
+
+    def ls(self, p: int) -> int:
+        return self.t[p].son[0]
+
+    def rs(self, p: int) -> int:
+        return self.t[p].son[1]
+
+    def par(self, p: int) -> int:
+        return self.t[p].par
 
 
 # 使用示例
+# ct = CartesianTree(lambda x, y: x < y)
+# for i in range(n):
+#     ct.add(i + 1, nums[i])
+#
+# root = ct.work(lambda x, y: x < y)
+# for i in range(1, n + 1):
+#     L = ct.Left(i)
+#     R = ct.Right(i)

@@ -1,176 +1,190 @@
-from dataclasses import dataclass
-from typing import List, Tuple
+from bisect import bisect_left, bisect_right
 
 
-@dataclass
-class PersistentSumNode:
-    lo: int = 0  # 左孩子
-    ro: int = 0  # 右孩子
-    sum: int = 0  # 总值
+class ChairmanTree:
+    class Node:
+        def __init__(
+            self, ls: int = 0, rs: int = 0, cnt: int = 0, sum: int = 0
+        ) -> None:
+            self.ls = ls
+            self.rs = rs
+            self.cnt = cnt
+            self.sum = sum
 
+    def __init__(self, a: list[int]) -> None:
+        self.vals = sorted(set(a))
+        n = len(a)
+        self.tr = [self.Node()]
+        self.root = [0] * (n + 1)
 
-class PersistentSegmentTree:
-    # 下面是维护多个版本的可持久化普通线段树
-    # 根据具体情况修改
-    # 维护树
+        self.root[0] = self.build(1, len(self.vals))
+        for i in range(1, n + 1):
+            pos = bisect_left(self.vals, a[i - 1]) + 1
+            self.root[i] = self.add(self.root[i - 1], 1, len(self.vals), pos, a[i - 1])
 
-    def __init__(self, a: List[int] | None = None, n: int | None = None):
-        if a is None and n is None:
-            raise ValueError("need a or n")
-        self.n = len(a) if a is not None else n
-        self.nodes = [PersistentSumNode()]
-        self.root = self._build(0, self.n - 1, a)
-
-    def _new(self, node: PersistentSumNode) -> int:
-        self.nodes.append(PersistentSumNode(node.lo, node.ro, node.sum))
-        return len(self.nodes) - 1
-
-    def _build(self, l: int, r: int, a: List[int] | None) -> int:
-        # 建一个空树
-        # 根据数组a建树
-        cur = len(self.nodes)
-        self.nodes.append(PersistentSumNode())
+    def build(self, l: int, r: int) -> int:
+        o = self.new_node()
         if l == r:
-            self.nodes[cur].sum = 0 if a is None else a[l]
-            return cur
+            return o
         m = (l + r) >> 1
-        self.nodes[cur].lo = self._build(l, m, a)
-        self.nodes[cur].ro = self._build(m + 1, r, a)
-        self.nodes[cur].sum = self.nodes[self.nodes[cur].lo].sum + self.nodes[self.nodes[cur].ro].sum
-        return cur
+        self.tr[o].ls = self.build(l, m)
+        self.tr[o].rs = self.build(m + 1, r)
+        return o
 
-    def update(self, root: int, pos: int, val: int) -> int:
-        # 将位置i的值更新为val
-        # 调用：node[r+1]=node[l]->update(0,n-1,i,val);
-        return self._update(root, 0, self.n - 1, pos, val)
-
-    def _update(self, root: int, l: int, r: int, pos: int, val: int) -> int:
-        cur = self._new(self.nodes[root])
+    def add(self, old: int, l: int, r: int, p: int, val: int) -> int:
+        o = self.copy_node(old)
+        self.tr[o].cnt += 1
+        self.tr[o].sum += val
         if l == r:
-            self.nodes[cur].sum = val
-            return cur
+            return o
         m = (l + r) >> 1
-        if pos <= m:
-            self.nodes[cur].lo = self._update(self.nodes[cur].lo, l, m, pos, val)
+        if p <= m:
+            self.tr[o].ls = self.add(self.tr[old].ls, l, m, p, val)
         else:
-            # 根据加入的值选择递归左孩子还是右孩子
-            self.nodes[cur].ro = self._update(self.nodes[cur].ro, m + 1, r, pos, val)
-        self.nodes[cur].sum = self.nodes[self.nodes[cur].lo].sum + self.nodes[self.nodes[cur].ro].sum
-        # 更新后操作
-        return cur
+            self.tr[o].rs = self.add(self.tr[old].rs, m + 1, r, p, val)
+        return o
 
-    def query(self, root: int, ql: int, qr: int) -> int:
-        # 查询[ql,qr]的和
-        # 调用：ll tem=Node::query(node[r],0,n-1,ql,qr);
-        return self._query(root, 0, self.n - 1, ql, qr)
+    def kth(self, l: int, r: int, k: int) -> int:
+        return self.vals[
+            self._kth(self.root[l - 1], self.root[r], 1, len(self.vals), k) - 1
+        ]
 
-    def _query(self, root: int, l: int, r: int, ql: int, qr: int) -> int:
-        if ql <= l and r <= qr:
-            return self.nodes[root].sum
-        m = (l + r) >> 1
-        ans = 0
-        if ql <= m:
-            ans += self._query(self.nodes[root].lo, l, m, ql, qr)
-        if qr > m:
-            ans += self._query(self.nodes[root].ro, m + 1, r, ql, qr)
-        return ans
+    def leq(self, l: int, r: int, x: int) -> tuple[int, int]:
+        pos = bisect_right(self.vals, x)
+        if not pos:
+            return 0, 0
+        return self.query(self.root[l - 1], self.root[r], 1, len(self.vals), pos)
 
+    def new_node(self) -> int:
+        self.tr.append(self.Node())
+        return len(self.tr) - 1
 
-@dataclass
-class ValueNode:
-    lo: int = 0  # 当前节点的左孩子
-    ro: int = 0  # 当前节点的右孩子
-    cnt: int = 0  # [l,r]中的元素个数
-    sum: int = 0  # [l,r]中元素总和
+    def copy_node(self, old: int) -> int:
+        x = self.tr[old]
+        self.tr.append(self.Node(x.ls, x.rs, x.cnt, x.sum))
+        return len(self.tr) - 1
 
-
-class PersistentValueSegmentTree:
-    # 下面是可持久化权值线段树，按道理说这才是真正的主席树
-    # 维护当前节点的左右权值
-    # 更新操作
-
-    def __init__(self, value_count: int):
-        self.n = value_count
-        self.nodes = [ValueNode()]
-        self.empty_root = self._build(0, self.n - 1)
-
-    def _build(self, l: int, r: int) -> int:
-        # 建一棵空树
-        cur = len(self.nodes)
-        self.nodes.append(ValueNode())
-        if l != r:
-            m = (l + r) >> 1
-            self.nodes[cur].lo = self._build(l, m)
-            self.nodes[cur].ro = self._build(m + 1, r)
-        return cur
-
-    def _new(self, root: int) -> int:
-        x = self.nodes[root]
-        self.nodes.append(ValueNode(x.lo, x.ro, x.cnt, x.sum))
-        return len(self.nodes) - 1
-
-    def update(self, root: int, pos: int, val: int) -> int:
-        # 加入下标为i，权值为val的元素
-        # 通常调用为 node[i]=node[i-1]->update(tem,nums[i-1]);
-        # 若要在版本v上修改，直接 node[cnt+1]=node[v]->update(tem,nums[i-1]);
-        return self._update(root, 0, self.n - 1, pos, val)
-
-    def _update(self, root: int, l: int, r: int, pos: int, val: int) -> int:
-        # 先复制上一阶段的树
-        cur = self._new(root)
+    # C++ 通过重载复用 kth；Python 将递归版本最小避名为 _kth
+    def _kth(self, old: int, now: int, l: int, r: int, k: int) -> int:
         if l == r:
-            self.nodes[cur].cnt += 1
-            self.nodes[cur].sum += val
-            # 若叶节点则进行操作
-            return cur
-        m = (l + r) >> 1
-        if pos <= m:
-            self.nodes[cur].lo = self._update(self.nodes[cur].lo, l, m, pos, val)
-        else:
-            # 根据加入的值选择递归左孩子还是右孩子
-            self.nodes[cur].ro = self._update(self.nodes[cur].ro, m + 1, r, pos, val)
-        lo = self.nodes[cur].lo
-        ro = self.nodes[cur].ro
-        self.nodes[cur].cnt = self.nodes[lo].cnt + self.nodes[ro].cnt
-        self.nodes[cur].sum = self.nodes[lo].sum + self.nodes[ro].sum
-        # 更新后操作
-        return cur
-
-    def kth(self, root: int, old: int, k: int) -> int:
-        # 找[l,r]中第k小的数
-        # 调用方式为 int tem=node[r]->kth(node[l-1],k);
-        return self._kth(root, old, 0, self.n - 1, k)
-
-    def _kth(self, root: int, old: int, l: int, r: int, k: int) -> int:
-        if l == r:
-            # 叶子则返回
             return l
+        left_cnt = self.tr[self.tr[now].ls].cnt - self.tr[self.tr[old].ls].cnt
         m = (l + r) >> 1
-        cnt_l = self.nodes[self.nodes[root].lo].cnt - self.nodes[self.nodes[old].lo].cnt  # 左子树中的全部数量
-        if k <= cnt_l:
-            # 如果小于则到左子树中招
-            return self._kth(self.nodes[root].lo, self.nodes[old].lo, l, m, k)
-        # 否则到右子树中找
-        return self._kth(self.nodes[root].ro, self.nodes[old].ro, m + 1, r, k - cnt_l)
+        if k <= left_cnt:
+            return self._kth(self.tr[old].ls, self.tr[now].ls, l, m, k)
+        return self._kth(self.tr[old].rs, self.tr[now].rs, m + 1, r, k - left_cnt)
 
-    def query_le(self, root: int, old: int, pos: int) -> Tuple[int, int]:
-        # 查询[l,r]中有多少个数<=i，这些数对应的元素和是多少
-        # 调用方式为 auto tem=node[r]->query(node[l-1],i);
-        return self._query_le(root, old, 0, self.n - 1, pos)
-
-    def _query_le(self, root: int, old: int, l: int, r: int, pos: int) -> Tuple[int, int]:
-        if r <= pos:
-            # 如果完全包裹
-            return self.nodes[root].cnt - self.nodes[old].cnt, self.nodes[root].sum - self.nodes[old].sum
+    def query(self, old: int, now: int, l: int, r: int, qr: int) -> tuple[int, int]:
+        if r <= qr:
+            return self.tr[now].cnt - self.tr[old].cnt, self.tr[now].sum - self.tr[
+                old
+            ].sum
         m = (l + r) >> 1
-        #  左子树查询
-        cnt, sum = self._query_le(self.nodes[root].lo, self.nodes[old].lo, l, m, pos)
-        if pos > m:
-            c, s = self._query_le(self.nodes[root].ro, self.nodes[old].ro, m + 1, r, pos)
-            cnt += c
-            sum += s
-            # 右子树查询
+        cnt, sum = self.query(self.tr[old].ls, self.tr[now].ls, l, m, qr)
+        if qr > m:
+            cnt2, sum2 = self.query(self.tr[old].rs, self.tr[now].rs, m + 1, r, qr)
+            cnt += cnt2
+            sum += sum2
         return cnt, sum
 
 
-# 下面是一道典题，LC3762，主席树+中位数贪心+离散化
+# 使用：ct = ChairmanTree(a)
+# ct.kth(l, r, k)：查询 1-indexed 区间 [l, r] 第 k 小的原值
+# ct.leq(l, r, x)：查询区间 [l, r] 内 <= x 的数量和总和
+#
+# a = [...]                         # a 是 0-indexed 原数组
+# ct = ChairmanTree(a)
+# kth_val = ct.kth(l, r, k)         # l, r, k 都按 1-indexed 传
+# cnt, sum = ct.leq(l, r, limit)
+
+
+# C++ 中两份备选结构同名，这里将第二份最小避名为 ChairmanTreeLite
+# 常数较小的主席树（和上面的版本二选一复制；复制时可改名回 ChairmanTree）
+#
+# 用法：
+#     a = [...]                         # 原数组，0-indexed
+#     ct = ChairmanTreeLite(a)
+#
+#     v = ct.kth(l, r, k)               # 查询 1-indexed 区间 [l, r] 第 k 小的原值
+#     cnt = ct.leq(l, r, x)             # 查询 1-indexed 区间 [l, r] 中 <= x 的数量
+#
+# 复杂度：
+#     建树 O(n log V)，单次 kth / leq 查询 O(log V)，V 为不同值个数。
+#
+# 为什么常数小：
+#     1. 不 build 空树，root[0] 直接用 0 号空节点。每次插入只新建一条链。
+#     2. Node 只维护 ls / rs / cnt，没有 sum 等额外字段，节点更小、缓存更友好。
+#     3. add / query 少维护一个 sum，递归里的运算更少。
+#
+# 什么时候用它：
+#     1. 只需要区间第 k 小、区间 <= x 的数量、排名/计数这类“只看个数”的查询。
+#     2. 题目卡常或 n 较大，内存、时间都比较紧。
+#
+# 什么时候用上面的版本：
+#     1. 需要同时查询区间 <= x 的数量和总和：cnt, sum = ct.leq(l, r, x)。
+#     2. 需要把节点扩展成维护 sum / max / 其它统计量。
+#     3. 想保留一棵显式 build 出来的空树，写扩展查询时更直观。
+class ChairmanTreeLite:
+    class Node:
+        def __init__(self, ls: int = 0, rs: int = 0, cnt: int = 0) -> None:
+            self.ls = ls
+            self.rs = rs
+            self.cnt = cnt
+
+    def __init__(self, a: list[int]) -> None:
+        self.vals = sorted(set(a))
+        n = len(a)
+        self.tr = [self.Node()]
+        self.root = [0] * (n + 1)
+
+        self.root[0] = 0
+        for i in range(1, n + 1):
+            pos = bisect_left(self.vals, a[i - 1]) + 1
+            self.root[i] = self.add(self.root[i - 1], 1, len(self.vals), pos)
+
+    def add(self, old: int, l: int, r: int, p: int) -> int:
+        o = self.copy_node(old)
+        self.tr[o].cnt += 1
+        if l == r:
+            return o
+        m = (l + r) >> 1
+        if p <= m:
+            self.tr[o].ls = self.add(self.tr[old].ls, l, m, p)
+        else:
+            self.tr[o].rs = self.add(self.tr[old].rs, m + 1, r, p)
+        return o
+
+    def kth(self, l: int, r: int, k: int) -> int:
+        return self.vals[
+            self._kth(self.root[l - 1], self.root[r], 1, len(self.vals), k) - 1
+        ]
+
+    def leq(self, l: int, r: int, x: int) -> int:
+        pos = bisect_right(self.vals, x)
+        if not pos:
+            return 0
+        return self.query(self.root[l - 1], self.root[r], 1, len(self.vals), pos)
+
+    def copy_node(self, old: int) -> int:
+        x = self.tr[old]
+        self.tr.append(self.Node(x.ls, x.rs, x.cnt))
+        return len(self.tr) - 1
+
+    # C++ 通过重载复用 kth；Python 将递归版本最小避名为 _kth
+    def _kth(self, old: int, now: int, l: int, r: int, k: int) -> int:
+        if l == r:
+            return l
+        left_cnt = self.tr[self.tr[now].ls].cnt - self.tr[self.tr[old].ls].cnt
+        m = (l + r) >> 1
+        if k <= left_cnt:
+            return self._kth(self.tr[old].ls, self.tr[now].ls, l, m, k)
+        return self._kth(self.tr[old].rs, self.tr[now].rs, m + 1, r, k - left_cnt)
+
+    def query(self, old: int, now: int, l: int, r: int, qr: int) -> int:
+        if r <= qr:
+            return self.tr[now].cnt - self.tr[old].cnt
+        m = (l + r) >> 1
+        res = self.query(self.tr[old].ls, self.tr[now].ls, l, m, qr)
+        if qr > m:
+            res += self.query(self.tr[old].rs, self.tr[now].rs, m + 1, r, qr)
+        return res

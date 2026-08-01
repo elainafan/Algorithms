@@ -1,28 +1,23 @@
-# Dijkstra单源最短路
-
-from collections import defaultdict, deque, Counter
-from functools import cache
-from sortedcontainers import SortedSet, SortedDict, SortedList
-from typing import List, Tuple, Set
-from math import inf
 from heapq import heappop, heappush
+from typing import List  # noqa: UP035
 
 
-def shortestPathDijkstra(n: int, edges: List[List[int]], start: int) -> List[int]:
+def dij(n: int, edges: List[List[int]], st: int) -> List[int]:  # noqa: UP006
     ma = [[] for _ in range(n)]
-    for x, y, z in edges:
-        ma[x].append((y, z))
-        ma[y].append((x, z))
-    dis = [inf] * n
-    dis[start] = 0
-    h = [(0, start)]
-    while h:
-        dis_x, x = heappop(h)
+    for p in edges:
+        ma[p[0]].append((p[1], p[2]))
+        ma[p[1]].append((p[0], p[2]))
+    dis = [(1 << 63) - 1] * n
+    q = []
+    dis[st] = 0
+    heappush(q, (0, st))
+    while q:
+        dis_x, x = heappop(q)
         if dis_x > dis[x]:
             continue
         for y, z in ma[x]:
             new_y = dis_x + z
             if new_y < dis[y]:
                 dis[y] = new_y
-                heappush(h, (new_y, y))
+                heappush(q, (new_y, y))
     return dis

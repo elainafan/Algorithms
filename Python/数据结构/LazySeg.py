@@ -1,132 +1,157 @@
-from typing import List
+from copy import copy
+
+
+class Tag:
+    __slots__ = ("add",)
+
+    def __init__(self, add: int = 0) -> None:
+        self.add = add
+
+    def empty(self) -> bool:
+        return self.add == 0
+
+    def apply(self, other: "Tag") -> None:
+        self.add += other.add  # 先做已有操作，再做 other
+
+
+class Info:
+    __slots__ = ("mx", "sum")
+
+    def __init__(self, sum: int = 0, mx=None) -> None:
+        self.sum = sum
+        self.mx = sum if mx is None else mx
+
+    def apply(self, tag: Tag, l: int, r: int) -> None:
+        self.sum += tag.add * (r - l + 1)
+        self.mx += tag.add
+
+    def __add__(self, other: "Info") -> "Info":
+        return Info(self.sum + other.sum, max(self.mx, other.mx))
+
+    def __lt__(self, other: "Info") -> bool:
+        return self.mx < other.mx  # 线段树二分用，不需要时可删
 
 
 class LazySegmentTree:
-    def __init__(self, a: List[int] | int, init_val: int = 0):
-        # 维护下标为[0,n-1],初始值为init_val的区间，或者数组a
+    def __init__(self, a, init_val=None) -> None:
         if isinstance(a, int):
-            a = [init_val] * a
+            init_val = Info() if init_val is None else init_val
+            a = [copy(init_val) for _ in range(a)]
         self.n = len(a)
-        self.val = [0] * (4 * self.n)
-        self.mx = [0] * (4 * self.n)
-        self.todo = [0] * (4 * self.n)  # 懒标记初始值
+        self.info = [Info() for _ in range(4 * self.n)]
+        self.tag = [Tag() for _ in range(4 * self.n)]
         self._build(a, 1, 0, self.n - 1)
 
-    def _pull(self, o: int) -> None:
-        # 合并两个val
-        # 合并线段树
-        self.val[o] = self.val[o << 1] + self.val[o << 1 | 1]
-        self.mx[o] = max(self.mx[o << 1], self.mx[o << 1 | 1])
+    def _apply(self, node: int, l: int, r: int, val: Tag) -> None:
+        self.info[node].apply(val, l, r)
+        self.tag[node].apply(val)
 
-    def _apply(self, o: int, l: int, r: int, v: int) -> None:
-        # 把懒标记作用到node子树
-        self.val[o] += v * (r - l + 1)
-        self.mx[o] += v
-        self.todo[o] += v
-        # 合并两个懒标记
-
-    def _push(self, o: int, l: int, r: int) -> None:
-        # 把当前节点的懒标记下传
-        if self.todo[o] == 0 or l == r:
+    def _pushdown(self, node: int, l: int, r: int) -> None:
+        if self.tag[node].empty():
             return
         m = (l + r) >> 1
-        v = self.todo[o]
-        self._apply(o << 1, l, m, v)
-        self._apply(o << 1 | 1, m + 1, r, v)
-        self.todo[o] = 0
+        self._apply(node << 1, l, m, self.tag[node])
+        self._apply(node << 1 | 1, m + 1, r, self.tag[node])
+        self.tag[node] = Tag()
 
-    def _build(self, a: List[int], o: int, l: int, r: int) -> None:
+    def _maintain(self, node: int) -> None:
+        self.info[node] = self.info[node << 1] + self.info[node << 1 | 1]
+
+    def _build(self, a: list[Info], node: int, l: int, r: int) -> None:
         if l == r:
-            self.val[o] = self.mx[o] = a[l]
+            self.info[node] = copy(a[l])
             return
         m = (l + r) >> 1
-        self._build(a, o << 1, l, m)
-        self._build(a, o << 1 | 1, m + 1, r)
-        self._pull(o)
-        # 建树，复杂度O(n)
+        self._build(a, node << 1, l, m)
+        self._build(a, node << 1 | 1, m + 1, r)
+        self._maintain(node)
 
-    def add(self, ql: int, qr: int, v: int) -> None:
-        # 更新[ql,qr]为f
-        self._add(1, 0, self.n - 1, ql, qr, v)
-
-    def _add(self, o: int, l: int, r: int, ql: int, qr: int, v: int) -> None:
+    def _update(self, node: int, l: int, r: int, ql: int, qr: int, val: Tag) -> None:
         if ql <= l and r <= qr:
-            self._apply(o, l, r, v)
+            self._apply(node, l, r, val)
             return
-        self._push(o, l, r)
+        self._pushdown(node, l, r)
         m = (l + r) >> 1
         if ql <= m:
-            self._add(o << 1, l, m, ql, qr, v)
+            self._update(node << 1, l, m, ql, qr, val)
         if qr > m:
-            self._add(o << 1 | 1, m + 1, r, ql, qr, v)
-        self._pull(o)
-        # 区间更新[ql,qr]
+            self._update(node << 1 | 1, m + 1, r, ql, qr, val)
+        self._maintain(node)
 
-    def query(self, ql: int, qr: int) -> int:
-        # 区间查询[ql,qr]
+    def _assign(self, node: int, l: int, r: int, i: int, val: Info) -> None:
+        if l == r:
+            self.info[node] = copy(val)
+            self.tag[node] = Tag()
+            return
+        self._pushdown(node, l, r)
+        m = (l + r) >> 1
+        if i <= m:
+            self._assign(node << 1, l, m, i, val)
+        else:
+            self._assign(node << 1 | 1, m + 1, r, i, val)
+        self._maintain(node)
+
+    def _query(self, node: int, l: int, r: int, ql: int, qr: int) -> Info:
+        if ql <= l and r <= qr:
+            return copy(self.info[node])
+        self._pushdown(node, l, r)
+        m = (l + r) >> 1
+        if qr <= m:
+            return self._query(node << 1, l, m, ql, qr)
+        if ql > m:
+            return self._query(node << 1 | 1, m + 1, r, ql, qr)
+        return self._query(node << 1, l, m, ql, qr) + self._query(
+            node << 1 | 1, m + 1, r, ql, qr
+        )
+
+    def _find_first(
+        self, node: int, l: int, r: int, ql: int, qr: int, val: Info
+    ) -> int:
+        if r < ql or qr < l or self.info[node] < val:
+            return -1
+        if l == r:
+            return l
+        self._pushdown(node, l, r)
+        m = (l + r) >> 1
+        res = self._find_first(node << 1, l, m, ql, qr, val)
+        if res != -1:
+            return res
+        return self._find_first(node << 1 | 1, m + 1, r, ql, qr, val)
+
+    def _find_last(self, node: int, l: int, r: int, ql: int, qr: int, val: Info) -> int:
+        if r < ql or qr < l or self.info[node] < val:
+            return -1
+        if l == r:
+            return l
+        self._pushdown(node, l, r)
+        m = (l + r) >> 1
+        res = self._find_last(node << 1 | 1, m + 1, r, ql, qr, val)
+        if res != -1:
+            return res
+        return self._find_last(node << 1, l, m, ql, qr, val)
+
+    def update(self, ql: int, qr: int, val: Tag) -> None:
+        self._update(1, 0, self.n - 1, ql, qr, val)  # 修改闭区间 [ql, qr]
+
+    def assign(self, i: int, val: Info) -> None:
+        self._assign(1, 0, self.n - 1, i, val)
+
+    def query(self, ql: int, qr: int) -> Info:
         return self._query(1, 0, self.n - 1, ql, qr)
 
-    def _query(self, o: int, l: int, r: int, ql: int, qr: int) -> int:
-        if ql <= l and r <= qr:
-            return self.val[o]
-        self._push(o, l, r)
-        m = (l + r) >> 1
-        ans = 0
-        if ql <= m:
-            ans += self._query(o << 1, l, m, ql, qr)
-        if qr > m:
-            ans += self._query(o << 1 | 1, m + 1, r, ql, qr)
-        # 区间查找
-        return ans
-
-    def find_first_at_least(self, ql: int, qr: int, val: int) -> int:
-        # 查询[ql,qr]中第一个满足条件的下标
+    def find_first(self, ql: int, qr: int, val: Info) -> int:
         return self._find_first(1, 0, self.n - 1, ql, qr, val)
 
-    def _find_first(self, o: int, l: int, r: int, ql: int, qr: int, val: int) -> int:
-        # 若遇到固定左端点的情况，需要使用全局变量（或者传入引用）记录前缀分段最大值，加一个被待求区间完全覆盖的剪枝
-        if r < ql or qr < l or self.mx[o] < val:
-            return -1
-        if l == r:
-            return l
-        self._push(o, l, r)
-        m = (l + r) >> 1
-        res = self._find_first(o << 1, l, m, ql, qr, val)
-        if res != -1:
-            return res
-        return self._find_first(o << 1 | 1, m + 1, r, ql, qr, val)
-
-    def find_last_at_least(self, ql: int, qr: int, val: int) -> int:
-        # 查询[ql,qr]中最后一个满足条件的下标
+    def find_last(self, ql: int, qr: int, val: Info) -> int:
         return self._find_last(1, 0, self.n - 1, ql, qr, val)
 
-    def _find_last(self, o: int, l: int, r: int, ql: int, qr: int, val: int) -> int:
-        if r < ql or qr < l or self.mx[o] < val:
-            return -1
-        if l == r:
-            return l
-        self._push(o, l, r)
-        m = (l + r) >> 1
-        res = self._find_last(o << 1 | 1, m + 1, r, ql, qr, val)
-        if res != -1:
-            return res
-        return self._find_last(o << 1, l, m, ql, qr, val)
 
-
-# 注：懒标记线段树无论做什么都需要pushdown
-# 此时其它与线段树二分同
-# 双标记，注意顺序
-# 合并两个乘法标记
-# LC850:矩形面积并（扫描线）
-# 区间内被覆盖的最小次数
-# 区间内为最小次数的区间长度
-# 懒标记
-# 根据左右儿子的信息，更新当前节点的信息
-# 仅更新节点信息，不下传懒标记
-# 下传懒标记
-# 有这么多个差值
-# 根节点是1
-# 注意点和区间的对应关系
-
-
-RangeAddSegmentTree = LazySegmentTree
+# 用法（n > 0；下标均为 0-based；区间均为闭区间）
+# tree = LazySegmentTree([Info(x) for x in a])
+# tree = LazySegmentTree(n, Info(0))
+# tree.update(l, r, Tag(x))                 # 区间加 x
+# tree.assign(i, Info(x))                   # 单点赋值
+# res = tree.query(l, r)                    # res.sum / res.mx
+# p = tree.find_first(l, r, Info(x))        # 第一个 a[p] >= x，不存在返回 -1
+# p = tree.find_last(l, r, Info(x))         # 最后一个 a[p] >= x，不存在返回 -1
+# 换题时修改 Info.apply、Info.__add__、Tag.empty 和 Tag.apply

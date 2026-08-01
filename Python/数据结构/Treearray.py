@@ -1,11 +1,7 @@
-from typing import List
-
-
-class Fenwick:
-    def __init__(self, data: int | List[int], init_val: int = 0):
-        if isinstance(data, int):
-            # 构造函数：初始化大小为 n 的树状数组，初始所有元素值为 val（外部表现为 0-based）
-            n = data
+class Tree:
+    def __init__(self, a, init_val: int = 0) -> None:
+        if isinstance(a, int):
+            n = a
             self.tree = [0] * (n + 1)
             for i in range(1, n + 1):
                 self.tree[i] += init_val
@@ -13,48 +9,85 @@ class Fenwick:
                 if j <= n:
                     self.tree[j] += self.tree[i]
         else:
-            # 构造函数：使用给定的 vector 在 O(N) 时间内快速初始化建树
-            n = len(data)
+            n = len(a)
             self.tree = [0] * (n + 1)
-            for i, x in enumerate(data, 1):
-                self.tree[i] += x  # data是 0-based
+            for i, x in enumerate(a, 1):
+                self.tree[i] += x
                 j = i + (i & -i)
                 if j <= n:
                     self.tree[j] += self.tree[i]
 
     def add(self, i: int, val: int = 1) -> None:
-        # 单点修改：将 0-based 下标 i 处的元素增加 val
         i += 1
         while i < len(self.tree):
             self.tree[i] += val
             i += i & -i
 
     def pre(self, i: int) -> int:
-        # 前缀求和：计算 0-based 下标区间 [0, i] 内的所有元素之和
-        if i < 0:
-            return 0
+        res = 0
         i += 1
-        ans = 0
         while i > 0:
-            ans += self.tree[i]
+            res += self.tree[i]
             i &= i - 1
-        return ans
+        return res
 
     def query(self, l: int, r: int) -> int:
-        # 区间求和：计算 0-based 下标区间 [l, r] 内的所有元素之和
         if r < l:
             return 0
-        return self.pre(r) - self.pre(l - 1)  # 当 l=0 时, pre(-1) 会合理地返回 0
+        return self.pre(r) - self.pre(l - 1)
 
     def lower_bound(self, val: int) -> int:
-        # 树上二分查找：返回满足前缀和 >= val 的最小 0-based 下标
-        pos = 0
+        n = len(self.tree) - 1
+        res = 0
         cur = 0
-        bit = 1 << (len(self.tree) - 1).bit_length()
+        bit = 1 << (n.bit_length() - 1) if n else 0
         while bit:
-            nxt = pos + bit
-            if nxt < len(self.tree) and cur + self.tree[nxt] < val:
+            nxt = res + bit
+            if nxt <= n and cur + self.tree[nxt] < val:
+                res = nxt
                 cur += self.tree[nxt]
-                pos = nxt
             bit >>= 1
-        return pos  # 返回 0-based 下标：内部 1-based 下标为 res + 1，因此 0-based 为 res
+        return res
+
+
+class MaxTree:
+    def __init__(self, a, identity: float = float("-inf")) -> None:
+        self.identity = identity
+        if isinstance(a, int):
+            self.tree = [identity] * (a + 1)
+            return
+        n = len(a)
+        self.tree = [identity] * (n + 1)
+        for i, x in enumerate(a, 1):
+            self.tree[i] = max(self.tree[i], x)
+            j = i + (i & -i)
+            if j <= n:
+                self.tree[j] = max(self.tree[j], self.tree[i])
+
+    def chmax(self, i: int, val: int) -> None:
+        i += 1
+        while i < len(self.tree):
+            self.tree[i] = max(self.tree[i], val)
+            i += i & -i
+
+    def pre(self, i: int) -> float:
+        res = self.identity
+        i += 1
+        while i > 0:
+            res = max(res, self.tree[i])
+            i &= i - 1
+        return res
+
+
+# 用法（下标均为 0-based；区间均为闭区间）
+# tree = Tree(a)
+# tree = Tree(n, init_val)
+# tree.add(i, x)
+# s = tree.pre(i)          # [0, i] 的和
+# s = tree.query(l, r)     # [l, r] 的和
+# i = tree.lower_bound(x)  # 最小的 i 使 pre(i) >= x；不存在返回 n
+# lower_bound 要求前缀和单调，通常即数组元素非负
+#
+# tree = MaxTree(a)
+# tree.chmax(i, x)         # 只支持单点变大
+# mx = tree.pre(i)         # [0, i] 的最大值

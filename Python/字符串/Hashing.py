@@ -1,41 +1,48 @@
-from typing import Tuple
+from time import monotonic_ns
+
+MASK = (1 << 64) - 1
 
 
-# 自定义 pair 的哈希函数，用于 unordered_map
-# 简单的组合哈希策略
+def splitmix64(x: int) -> int:
+    x = (x + 0x9E3779B97F4A7C15) & MASK
+    x = ((x ^ (x >> 30)) * 0xBF58476D1CE4E5B9) & MASK
+    x = ((x ^ (x >> 27)) * 0x94D049BB133111EB) & MASK
+    return (x ^ (x >> 31)) & MASK
+
+
+class custom_hash:
+    FIXED_RANDOM = monotonic_ns()
+
+    def __call__(self, x: int) -> int:
+        return splitmix64(x + self.FIXED_RANDOM)
 
 
 class StringHash:
-    # 双哈希类
-    # 第一组参数
-    MOD1 = 10**9 + 7
-    BASE1 = 131
+    _base = 0
 
-    # 第二组参数
-    MOD2 = 10**9 + 9
-    BASE2 = 13331
+    @staticmethod
+    def base() -> int:
+        if StringHash._base == 0:
+            StringHash._base = splitmix64(monotonic_ns()) | 1
+        return StringHash._base
 
-    def __init__(self, s: str):
+    def __init__(self, s: str) -> None:
         n = len(s)
-        self.h1 = [0] * (n + 1)
-        self.h2 = [0] * (n + 1)
-        self.p1 = [1] * (n + 1)
-        self.p2 = [1] * (n + 1)
-        for i, ch in enumerate(s):
-            x = ord(ch)
-            # 哈希 1
-            self.h1[i + 1] = (self.h1[i] * self.BASE1 + x) % self.MOD1
-            self.p1[i + 1] = self.p1[i] * self.BASE1 % self.MOD1
+        self.h = [0] * (n + 1)
+        self.p = [1] * (n + 1)
+        base = self.base()
+        for i in range(n):
+            self.h[i + 1] = (self.h[i] * base + (ord(s[i]) & 255) + 1) & MASK
+            self.p[i + 1] = self.p[i] * base & MASK
 
-            # 哈希 2
-            self.h2[i + 1] = (self.h2[i] * self.BASE2 + x) % self.MOD2
-            self.p2[i + 1] = self.p2[i] * self.BASE2 % self.MOD2
-
-    def query(self, l: int, r: int) -> Tuple[int, int]:
-        # 获取 s[l...r] 的双哈希值 (闭区间，0-indexed)
-        v1 = (self.h1[r + 1] - self.h1[l] * self.p1[r - l + 1]) % self.MOD1  # 关键：处理负数
-        v2 = (self.h2[r + 1] - self.h2[l] * self.p2[r - l + 1]) % self.MOD2  # 关键：处理负数
-        return v1, v2
+    # 获取 s[l...r] 的哈希值，闭区间，0-indexed
+    def query(self, l: int, r: int) -> int:
+        return (self.h[r + 1] - self.h[l] * self.p[r - l + 1]) & MASK
 
 
-# 使用：unordered_map<pair<ll,ll>,int,pair_hash>ma;
+# 使用：
+# hs = StringHash(s)
+# value = hs.query(l, r)
+#
+# Python 的 dict 不能像 C++ unordered_map 一样传入自定义哈希器。
+# 如果只想手动混淆整数键，可以写 value = custom_hash()(x)

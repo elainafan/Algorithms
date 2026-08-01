@@ -1,120 +1,115 @@
-from dataclasses import dataclass
-from typing import Callable, List, TypeVar
+from copy import copy
 
 
-T = TypeVar("T")
+class Info:
+    __slots__ = ("ans", "mx", "pre", "suf", "sum")
+
+    def __init__(self, x: int = 0) -> None:
+        self.sum = self.pre = self.suf = self.ans = self.mx = x
+
+    def __add__(self, other: "Info") -> "Info":
+        res = Info()
+        res.sum = self.sum + other.sum
+        res.pre = max(self.pre, self.sum + other.pre)
+        res.suf = max(other.suf, other.sum + self.suf)
+        res.ans = max(self.ans, other.ans, self.suf + other.pre)
+        res.mx = max(self.mx, other.mx)
+        return res
+
+    def __lt__(self, other: "Info") -> bool:
+        return self.mx < other.mx  # 线段树二分用，不需要时可删
 
 
 class SegmentTree:
-    # 维护整棵树
-
-    def __init__(self, a: List[T] | int, init_val: T = 0, merge: Callable[[T, T], T] | None = None):
-        # 传入一个数组维护
+    def __init__(self, a, init_val=None) -> None:
         if isinstance(a, int):
-            a = [init_val] * a
+            init_val = Info() if init_val is None else init_val
+            a = [copy(init_val) for _ in range(a)]
         self.n = len(a)
-        self.merge = merge or max  # 合并子树
-        self.tree = [init_val] * (4 * self.n)
+        self.tree = [Info() for _ in range(4 * self.n)]
         self._build(a, 1, 0, self.n - 1)
 
-    def _build(self, a: List[T], o: int, l: int, r: int) -> None:
+    def _maintain(self, node: int) -> None:
+        self.tree[node] = self.tree[node << 1] + self.tree[node << 1 | 1]
+
+    def _build(self, a: list[Info], node: int, l: int, r: int) -> None:
         if l == r:
-            self.tree[o] = a[l]
+            self.tree[node] = copy(a[l])
             return
         m = (l + r) >> 1
-        self._build(a, o << 1, l, m)
-        self._build(a, o << 1 | 1, m + 1, r)
-        self.tree[o] = self.merge(self.tree[o << 1], self.tree[o << 1 | 1])
-        # 建树
+        self._build(a, node << 1, l, m)
+        self._build(a, node << 1 | 1, m + 1, r)
+        self._maintain(node)
 
-    def update(self, pos: int, val: T) -> None:
-        # 更新i的值为val
-        self._update(1, 0, self.n - 1, pos, val)
-
-    def _update(self, o: int, l: int, r: int, pos: int, val: T) -> None:
+    def _update(self, node: int, l: int, r: int, i: int, val: Info) -> None:
         if l == r:
-            self.tree[o] = val
+            self.tree[node] = copy(val)
             return
         m = (l + r) >> 1
-        if pos <= m:
-            self._update(o << 1, l, m, pos, val)
+        if i <= m:
+            self._update(node << 1, l, m, i, val)
         else:
-            self._update(o << 1 | 1, m + 1, r, pos, val)
-        self.tree[o] = self.merge(self.tree[o << 1], self.tree[o << 1 | 1])
-        # 更新i处的值为val
+            self._update(node << 1 | 1, m + 1, r, i, val)
+        self._maintain(node)
 
-    def query(self, ql: int, qr: int) -> T:
-        # 查询[ql,qr]的值
-        return self._query(1, 0, self.n - 1, ql, qr)
-
-    def _query(self, o: int, l: int, r: int, ql: int, qr: int) -> T:
+    def _query(self, node: int, l: int, r: int, ql: int, qr: int) -> Info:
         if ql <= l and r <= qr:
-            return self.tree[o]
+            return copy(self.tree[node])
         m = (l + r) >> 1
         if qr <= m:
-            return self._query(o << 1, l, m, ql, qr)
+            return self._query(node << 1, l, m, ql, qr)
         if ql > m:
-            return self._query(o << 1 | 1, m + 1, r, ql, qr)
-        l_res = self._query(o << 1, l, m, ql, qr)
-        r_res = self._query(o << 1 | 1, m + 1, r, ql, qr)
-        return self.merge(l_res, r_res)  # 查询[ql,qr]的值
+            return self._query(node << 1 | 1, m + 1, r, ql, qr)
+        return self._query(node << 1, l, m, ql, qr) + self._query(
+            node << 1 | 1, m + 1, r, ql, qr
+        )
 
-    def get(self, pos: int) -> T:
-        # 取出i处的值
-        return self.query(pos, pos)
+    def _find_first(
+        self, node: int, l: int, r: int, ql: int, qr: int, val: Info
+    ) -> int:
+        if r < ql or qr < l or self.tree[node] < val:
+            return -1
+        if l == r:
+            return l
+        m = (l + r) >> 1
+        res = self._find_first(node << 1, l, m, ql, qr, val)
+        if res != -1:
+            return res
+        return self._find_first(node << 1 | 1, m + 1, r, ql, qr, val)
 
-    def find_first_at_least(self, ql: int, qr: int, val: T) -> int:
-        # 查询[ql,qr]中第一个满足条件的下标
+    def _find_last(self, node: int, l: int, r: int, ql: int, qr: int, val: Info) -> int:
+        if r < ql or qr < l or self.tree[node] < val:
+            return -1
+        if l == r:
+            return l
+        m = (l + r) >> 1
+        res = self._find_last(node << 1 | 1, m + 1, r, ql, qr, val)
+        if res != -1:
+            return res
+        return self._find_last(node << 1, l, m, ql, qr, val)
+
+    def update(self, i: int, val: Info) -> None:
+        self._update(1, 0, self.n - 1, i, val)  # 将 i 处改为 val
+
+    def query(self, ql: int, qr: int) -> Info:
+        return self._query(1, 0, self.n - 1, ql, qr)  # 查询闭区间 [ql, qr]
+
+    def get(self, i: int) -> Info:
+        return self.query(i, i)
+
+    def find_first(self, ql: int, qr: int, val: Info) -> int:
         return self._find_first(1, 0, self.n - 1, ql, qr, val)
 
-    def _find_first(self, o: int, l: int, r: int, ql: int, qr: int, val: T) -> int:
-        # 若遇到固定左端点的情况，需要使用全局变量（或者传入引用）记录前缀分段最大值，加一个被待求区间完全覆盖的剪枝
-        if r < ql or qr < l or self.tree[o] < val:
-            return -1
-        if l == r:
-            return l
-        m = (l + r) >> 1
-        res = self._find_first(o << 1, l, m, ql, qr, val)
-        if res != -1:
-            return res
-        return self._find_first(o << 1 | 1, m + 1, r, ql, qr, val)
-
-    def find_last_at_least(self, ql: int, qr: int, val: T) -> int:
-        # 查询[ql,qr]中最后一个满足条件的下标
+    def find_last(self, ql: int, qr: int, val: Info) -> int:
         return self._find_last(1, 0, self.n - 1, ql, qr, val)
 
-    def _find_last(self, o: int, l: int, r: int, ql: int, qr: int, val: T) -> int:
-        if r < ql or qr < l or self.tree[o] < val:
-            return -1
-        if l == r:
-            return l
-        m = (l + r) >> 1
-        res = self._find_last(o << 1 | 1, m + 1, r, ql, qr, val)
-        if res != -1:
-            return res
-        return self._find_last(o << 1, l, m, ql, qr, val)
 
-
-@dataclass
-class MaxSubarrayInfo:
-    total: int = 0
-    pre: int = 0
-    suf: int = 0
-    ans: int = 0
-
-    @classmethod
-    def from_value(cls, x: int) -> "MaxSubarrayInfo":
-        return cls(x, x, x, x)
-
-
-def merge_max_subarray(a: MaxSubarrayInfo, b: MaxSubarrayInfo) -> MaxSubarrayInfo:
-    # CF1906F
-    # 引入了维护Info，重载加法的新想法
-    # 维护最大子段和，离线处理，换维度
-    # 好题
-    return MaxSubarrayInfo(
-        total=a.total + b.total,
-        pre=max(a.pre, a.total + b.pre),
-        suf=max(b.suf, b.total + a.suf),
-        ans=max(a.ans, b.ans, a.suf + b.pre),
-    )
+# 用法（n > 0；下标均为 0-based；区间均为闭区间）
+# tree = SegmentTree([Info(x) for x in a])
+# tree = SegmentTree(n, Info(0))
+# tree.update(i, Info(x))
+# ans = tree.query(l, r).ans
+# x = tree.get(i).sum
+# p = tree.find_first(l, r, Info(x))    # 第一个 a[p] >= x，不存在返回 -1
+# p = tree.find_last(l, r, Info(x))     # 最后一个 a[p] >= x，不存在返回 -1
+# 当前 Info 维护最大子段和；换题时按需修改 Info 和 __add__

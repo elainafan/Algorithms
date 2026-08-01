@@ -1,19 +1,20 @@
-from typing import List, Tuple
+M = 2 * 10**8
+is_prime = bytearray()
+primes = []
 
 
-def eratosthenes(mx: int) -> Tuple[List[bool], List[int]]:
-    is_prime = [True] * mx
-    if mx > 0:
-        is_prime[0] = False
-    if mx > 1:
-        is_prime[1] = False
+def init() -> None:
+    global is_prime
 
-    primes = []
-    for i in range(2, mx):
+    is_prime = bytearray(b"\x01") * M
+    is_prime[0] = is_prime[1] = False
+    primes.clear()
+    for i in range(2, M):
         if is_prime[i]:
             primes.append(i)
-            if i * i < mx:
-                for j in range(i * i, mx, i):
-                    is_prime[j] = False
-    # 函数指针在创建时自动调用
-    return is_prime, primes
+            for j in range(i * i, M, i):
+                is_prime[j] = False
+
+
+# Python 中避免导入文件时立即分配约 200 MB，使用前手动调用 init()
+# 用法：init()

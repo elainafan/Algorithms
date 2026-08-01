@@ -53,3 +53,11 @@
 - ``zfunc.cpp``：Zfunc/拓展kmp算法，求LCP。
 - ``Hashing.cpp``：字符串哈希。
 - ``Manacher.cpp``：Manacher算法，线性求所有奇偶回文半径。
+- ``SA.cpp``：后缀数组，构造 sa、rk、height，支持 LCP、子串比较和常见统计。
+
+### 计算几何
+
+- ``Point.cpp``：点和向量、点积、叉积、距离与旋转。
+- ``Line.cpp``：直线交点、线段相交、投影、对称与距离。
+- ``Polygon.cpp``：多边形面积、点包含、重心、凸包与旋转卡壳。
+- ``Circle.cpp``：圆的交点、切点、外接圆与两圆相交面积。

@@ -1,181 +1,71 @@
-// Trie 短版：赛时方便改
-// 改法：
-// 1. 改 SIG 和 id()，适配字符集。
-// 2. 在 Node 里加字段，比如 idx / mn / mx / vector<int> ids。
-// 3. 在 insert() 经过节点或结尾时维护字段。
-// 4. 需要查询时先 walk() 到节点，再读 tr[u] 的字段。
-template<int SIG = 26>
-struct TrieLite {
-    struct Node {
-        int ch[SIG];
-        int pass, end;
+// 每个 solve() 独立使用
 
-        Node() : pass(0), end(0) {
-            memset(ch, -1, sizeof ch);
+// 小写字母 Trie
+void solve() {
+    vector<array<int, 26>> son(1);
+    vi endcnt(1);
+    auto insert = [&](const string& s) -> void {
+        int cur = 0;
+        for (auto c : s) {
+            c -= 'a';
+            if (!son[cur][c]) son[cur][c] = sz(son), son.push_back({}), endcnt.push_back(0);
+            cur = son[cur][c];
         }
-    };
-
-    vector<Node> tr;
-
-    TrieLite() {
-        tr.push_back(Node()); // 0 是根
-    }
-
-    int id(char c) {
-        return c - 'a'; // 大写改成 c - 'A'，01 串改成 c - '0'
-    }
-
-    int newnode() {
-        tr.push_back(Node());
-        return (int)tr.size() - 1;
-    }
-
-    void insert(const string& s) {
-        int u = 0;
-        tr[u].pass++;
-        for (int i = 0; i < (int)s.size(); i++) {
-            int c = id(s[i]);
-            if (tr[u].ch[c] == -1) {
-                int v = newnode();
-                tr[u].ch[c] = v;
-            }
-            u = tr[u].ch[c];
-            tr[u].pass++;
-            // 经过节点时要维护的信息写这里
+        endcnt[cur]++;
+    };  // 插入字符串 s
+    auto query = [&](const string& s) -> int {
+        int cur = 0;
+        for (auto c : s) {
+            c -= 'a';
+            if (!son[cur][c]) return 0;
+            cur = son[cur][c];
         }
-        tr[u].end++;
-        // 单词结尾要维护的信息写这里
-    }
+        return endcnt[cur];
+    };  // 查询字符串 s 的出现次数
+}
 
-    int walk(const string& s) {
-        int u = 0;
-        for (int i = 0; i < (int)s.size(); i++) {
-            int c = id(s[i]);
-            if (tr[u].ch[c] == -1) return -1;
-            u = tr[u].ch[c];
+// 非字母 Trie
+void solve() {
+    vector<map<int, int>> son(1);
+    vi endcnt(1);
+    auto insert = [&](const vi& a) -> void {
+        int cur = 0;
+        for (auto x : a) {
+            if (!son[cur].count(x)) son[cur][x] = sz(son), son.emplace_back(), endcnt.push_back(0);
+            cur = son[cur][x];
         }
-        return u;
-    }
-
-    int cntword(const string& s) {
-        int u = walk(s);
-        return u == -1 ? 0 : tr[u].end;
-    }
-
-    int cntprefix(const string& s) {
-        int u = walk(s);
-        return u == -1 ? 0 : tr[u].pass;
-    }
-};
-
-// 用法：
-// TrieLite<26> trie;
-// trie.insert("abc");
-// int u = trie.walk("ab");
-// if (u != -1) cout << trie.tr[u].pass << '\n';
-
-// 非字母短版：字符集很大 / token 是 int 时用
-struct MapTrieLite {
-    struct Node {
-        map<int, int> ch; // 想更快可换 unordered_map<int,int>
-        int pass = 0;
-        int end = 0;
-    };
-
-    vector<Node> tr;
-
-    MapTrieLite() {
-        tr.push_back(Node());
-    }
-
-    int newnode() {
-        tr.push_back(Node());
-        return (int)tr.size() - 1;
-    }
-
-    void insert(const vector<int>& a) {
-        int u = 0;
-        tr[u].pass++;
-        for (int i = 0; i < (int)a.size(); i++) {
-            int x = a[i];
-            if (!tr[u].ch.count(x)) {
-                int v = newnode();
-                tr[u].ch[x] = v;
-            }
-            u = tr[u].ch[x];
-            tr[u].pass++;
+        endcnt[cur]++;
+    };  // 插入序列 a
+    auto query = [&](const vi& a) -> int {
+        int cur = 0;
+        for (auto x : a) {
+            if (!son[cur].count(x)) return 0;
+            cur = son[cur][x];
         }
-        tr[u].end++;
-    }
+        return endcnt[cur];
+    };  // 查询序列 a 的出现次数
+}
 
-    int walk(const vector<int>& a) {
-        int u = 0;
-        for (int i = 0; i < (int)a.size(); i++) {
-            int x = a[i];
-            if (!tr[u].ch.count(x)) return -1;
-            u = tr[u].ch[x];
+// 01-Trie：插入、查询最大异或
+void solve() {
+    const int LOG = 30;
+    vector<array<int, 2>> son(1);
+    auto insert = [&](ll x) -> void {
+        int cur = 0;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1;
+            if (!son[cur][b]) son[cur][b] = sz(son), son.push_back({});
+            cur = son[cur][b];
         }
-        return u;
-    }
-};
-
-// 01-Trie 短版：只留最常用的插入和最大异或
-// 需要删除就给每个点 cnt--；需要 min_xor 就优先走同位。
-template<int LOG = 30>
-struct BinaryTrieLite {
-    struct Node {
-        int ch[2];
-        int cnt;
-
-        Node() : cnt(0) {
-            ch[0] = ch[1] = -1;
-        }
-    };
-
-    vector<Node> tr;
-
-    BinaryTrieLite() {
-        tr.push_back(Node());
-    }
-
-    int newnode() {
-        tr.push_back(Node());
-        return (int)tr.size() - 1;
-    }
-
-    void insert(long long x) {
-        int u = 0;
-        tr[u].cnt++;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            if (tr[u].ch[b] == -1) {
-                int v = newnode();
-                tr[u].ch[b] = v;
-            }
-            u = tr[u].ch[b];
-            tr[u].cnt++;
-        }
-    }
-
-    long long max_xor(long long x) {
-        if (tr[0].cnt == 0) return 0;
-        int u = 0;
-        long long ans = 0;
-        for (int i = LOG; i >= 0; i--) {
-            int b = (x >> i) & 1;
-            int v = tr[u].ch[b ^ 1];
-            if (v != -1 && tr[v].cnt > 0) {
-                ans |= 1LL << i;
-                u = v;
-            } else {
-                u = tr[u].ch[b];
-            }
+    };  // 插入整数 x
+    auto query = [&](ll x) -> ll {
+        int cur = 0;
+        ll ans = 0;
+        frep(i, LOG, 0) {
+            int b = x >> i & 1;
+            if (son[cur][b ^ 1]) ans |= 1LL << i, b ^= 1;
+            cur = son[cur][b];
         }
         return ans;
-    }
-};
-
-// 用法：
-// BinaryTrieLite<30> trie;
-// trie.insert(x);
-// cout << trie.max_xor(x) << '\n';
+    };  // 查询 max(x^y)
+}

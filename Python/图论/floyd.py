@@ -1,26 +1,17 @@
-# floya全源最短路
-
-from collections import defaultdict, deque, Counter
-from functools import cache
-from sortedcontainers import SortedSet, SortedDict, SortedList
-from typing import List, Tuple, Set
-from math import inf
-from heapq import heappop, heappush
-from bisect import bisect_left, bisect_right
-import math
+from typing import List  # noqa: UP035
 
 
-def shortestPathFloyd(self, n: int, edges: List[List[int]]) -> List[List[int]]:
-    ma = [[inf] * n for _ in range(n)]
+def floyd(n: int, edges: List[List[int]]) -> List[List[int]]:  # noqa: UP006
+    dp = [[((1 << 63) - 1) // 2] * n for _ in range(n)]
     for i in range(n):
-        ma[i][i] = 0
-    for x, y, z in edges:
-        ma[x][y] = min(ma[x][y], z)
-        ma[y][x] = min(ma[y][x], z)
+        dp[i][i] = 0
+    for p in edges:
+        dp[p[0]][p[1]] = min(dp[p[0]][p[1]], p[2])
+        dp[p[1]][p[0]] = min(dp[p[1]][p[0]], p[2])
     for k in range(n):
         for i in range(n):
-            if ma[i][k] == inf:
+            if dp[i][k] == ((1 << 63) - 1) // 2:
                 continue
             for j in range(n):
-                ma[i][j] = min(ma[i][j], ma[i][k] + ma[k][j])
-    return ma
+                dp[i][j] = min(dp[i][j], dp[i][k] + dp[k][j])
+    return dp
