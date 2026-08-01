@@ -16,6 +16,14 @@
 - ``Floyd.cpp``：Floyd算法，全源最短路。
 - ``toposort.cpp``：拓扑排序
 
+### 网络流
+
+- [`NetworkFlow.md`](C++/网络流/NetworkFlow.md)：选板子、常用建图、上下界流与方案恢复。
+- [`Dinic.cpp`](C++/网络流/Dinic.cpp)：最大流、限制流量与最小割源点侧。
+- [`HopcroftKarp.cpp`](C++/网络流/HopcroftKarp.cpp)：二分图最大匹配与最小点覆盖。
+- [`LowerFlow.cpp`](C++/网络流/LowerFlow.cpp)：上下界可行流、最大流与最小非负流。
+- [`MCMF.cpp`](C++/网络流/MCMF.cpp)：势能与 Dijkstra 实现的最小费用流。
+
 ### 树论
 - ``LCA.cpp``：倍增法求最近公共祖先
 - ``Diameter.cpp``：树的直径
