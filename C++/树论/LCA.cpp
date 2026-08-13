@@ -62,13 +62,31 @@ void solve() {
     vi pa(n + 1);
     vvl up(n + 1, vl(20, 0));
     rep(i, 0, n) { up[i][0] = pa[i]; }
-    rep(j, 0, 19) {
+    rep(j, 1, 19) {
         rep(i, 1, n) {
-            int mid = up[i][j];
+            int mid = up[i][j - 1];
             if (mid != 0) {
-                up[i][j + 1] = up[mid][j];
+                up[i][j] = up[mid][j - 1];
             }
         }
     }
-    return ;
+    auto jump = [&](ll x, ll k) -> ll {
+        rep(i, 0, 19) {
+            if (k >> i & 1) x = up[x][i];
+        }
+        return x;
+    };
+    auto lca = [&](ll x, ll y) -> ll {
+        if (dep[x] < dep[y]) swap(x, y);
+        ll tem = dep[x] - dep[y];
+        x = jump(x, tem);
+        if (x == y) return x;
+        frep(i, 19, 0) {
+            if (up[x][i] != -1 && up[x][i] != up[y][i]) {
+                x = up[x][i], y = up[y][i];
+            }
+        }
+        return pa[x];
+    };
+    return;
 }
