@@ -49,10 +49,13 @@
 - ``UnionFind.cpp``：并查集（带大小）
 - ``UnionFind_With_Weights.cpp``：带权并查集
 - ``RollbackUnionFind.cpp``：回滚并查集，支持撤销合并
+- ``PersistentUnionFind.cpp``：可持久化并查集，支持从任意历史版本合并、连通性和集合大小查询。
 - ``Trie.cpp``：Trie/字典树，前缀匹配
+- ``PersistentTrie.cpp``：可持久化 01-Trie，支持从任意历史版本增删，并查询异或极值、计数和第 k 小。
 - ``Treearray.cpp``：树状数组，单点修改区间查询，离散化。
 - ``SegmentTree.cpp``：线段树与动态开点线段树，单点修改区间查询，线段树二分。
 - ``LazySeg.cpp``：懒标记线段树与动态开点懒标记线段树，区间修改区间查询，线段树二分。
+- ``PersistentSegmentTree.cpp``：可持久化线段树，支持从任意历史版本单点修改、区间查询和线段树二分。
 - ``ChairmanTree.cpp``：可持久化权值线段树/主席树，单点修改，区间查询第k小
 - ``ChthollyTree.cpp``：珂朵莉树，支持区间推平、区间修改、区间查询和区间第k小。
 
