@@ -49,7 +49,7 @@ public:
 m 是二进制位数，处理第 0 到 m-1 位，要求 1 <= m <= 63。
 插入值和查询 x 均为非负 ll，且小于 2^m；默认 m=63 覆盖非负 ll。
 建好 n 个前缀需要 O(nm) 时间、O(nm) 空间，单次查询 O(m)，追加均摊 O(m)。
-每个前缀都保存一份基，数值 < 2^30 时传 m=30 可以节省内存。
+每个前缀都保存一份基，按值域选取满足要求的最小 m 可以节省内存。
 */
 class PrefixXorBasis {
     int m;
@@ -114,17 +114,17 @@ public:
 
 /*
 用法：
-    vl a = {1, 2, 3};
-    PrefixXorBasis b(a, 30);        // a[0] 对应查询位置 1
-    ll ans = b.max_xor(2, 3);       // 3：在 {2, 3} 中任选若干个数
-    bool ok = b.contains(2, 3, 1);  // true：2 ^ 3 = 1
-    int k = b.rank(2, 3);           // 2，共 4 种异或值：0、1、2、3
+    // a 为已读入的 vl 数组，m 为满足值域要求的二进制位数。
+    PrefixXorBasis b(a, m);        // 构造 a 的所有前缀线性基
+    // 从空数组开始时，将构造语句改为 PrefixXorBasis b(m)。
 
-    b.insert(4);                  // 追加后得到版本 4，旧版本仍能查询
-    ans = b.max_xor(2, 4);         // 7：3 ^ 4
-    ans = b.max_xor(2, 4, 8);      // 15：8 ^ 3 ^ 4
+    b.insert(x);                   // 在数组末尾追加 x，并保存新的前缀线性基
+    ll ans = b.max_xor(l, r);       // 查询 [l, r] 内的最大子集异或和
+    ans = b.max_xor(l, r, x);       // 查询 max(x ^ s)，s 遍历 [l, r] 内的所有子集异或值
+    bool ok = b.contains(l, r, x);  // 判断 [l, r] 内是否存在子集，其异或和为 x
+    int k = b.rank(l, r);           // 查询 [l, r] 的秩，不同子集异或值共有 2^k 个
 
-    // 从空数组开始时写 PrefixXorBasis b(30)，随后依次 b.insert(x)。
+    // [l, r] 为 1-based 闭区间，需满足 1 <= l <= r <= 已插入元素个数，以上查询均允许空集。
     // 若要求非空子集异或得到 0，判断 b.rank(l, r) < r-l+1，即区间内线性相关。
     // 2^k 是数学表达式；k=63 时不要使用有符号的 1LL << k。
 */
