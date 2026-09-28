@@ -55,6 +55,7 @@
 - ``Treearray.cpp``：树状数组，单点修改区间查询，离散化。
 - ``SegmentTree.cpp``：线段树与动态开点线段树，单点修改区间查询，线段树二分。
 - ``LazySeg.cpp``：懒标记线段树与动态开点懒标记线段树，区间修改区间查询，线段树二分。
+- [`LiChaoTree.cpp`](C++/数据结构/LiChaoTree.cpp)：李超线段树，支持直线、区间线段插入，查询最小值 / 最大值及编号。
 - ``PersistentSegmentTree.cpp``：可持久化线段树，支持从任意历史版本单点修改、区间查询和线段树二分。
 - ``PersistentDynamicSegmentTree.cpp``：可持久化动态开点线段树，支持在大值域上从任意历史版本分叉、单点赋值、区间查询和线段树二分。
 - ``ChairmanTree.cpp``：可持久化权值线段树/主席树，单点修改，区间查询第k小
@@ -66,6 +67,7 @@
 - ``Hashing.cpp``：字符串哈希。
 - ``Manacher.cpp``：Manacher算法，线性求所有奇偶回文半径。
 - ``SA.cpp``：后缀数组，构造 sa、rk、height，支持 LCP、子串比较和常见统计。
+- ``ACAM.cpp``：AC 自动机与 fail 树，支持多模式匹配、Fail 树 DFS 序和子树查询。
 
 ### 计算几何
 

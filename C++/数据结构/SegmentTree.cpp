@@ -10,6 +10,11 @@ Info operator+(const Info& a, const Info& b) {
     c.ans = max({a.ans, b.ans, a.suf + b.pre});
     return c;
 }
+
+bool operator<(const Info& a, const Info& b) {
+    return a.sum < b.sum;
+}  // 线段树二分用，按题意修改比较规则，不需要时可删
+
 template <typename T>
 class SegmentTree {
     int n;
@@ -54,9 +59,9 @@ class SegmentTree {
         return merge_val(l_res, r_res);
     }  // 查询[ql,qr]的值
 
-    int find_first(int node, int l, int r, int ql, int qr, T val) const {
+    int find_first(int node, int l, int r, int ql, int qr, const T& val) const {
         if (r < ql || l > qr) return -1;
-        if (tree[node].val < val) return -1;
+        if (tree[node] < val) return -1;
         if (l == r) return l;
         int m = (l + r) >> 1;
         int res = find_first(node << 1, l, m, ql, qr, val);
@@ -65,9 +70,9 @@ class SegmentTree {
     }
     // 若固定左端点，需要记录前缀分段最大值，并加被待求区间完全覆盖的剪枝
 
-    int find_last(int node, int l, int r, int ql, int qr, T val) const {
+    int find_last(int node, int l, int r, int ql, int qr, const T& val) const {
         if (r < ql || l > qr) return -1;
-        if (tree[node].val < val) return -1;
+        if (tree[node] < val) return -1;
         if (l == r) return l;
         int m = (l + r) >> 1;
         int res = find_last(node << 1 | 1, m + 1, r, ql, qr, val);
@@ -90,12 +95,24 @@ public:
 
     T get(int i) const { return query(1, 0, n - 1, i, i); }  // 取出i处的值
 
-    // 查询[ql,qr]中第一个满足条件的下标
-    int find_first(int ql, int qr, T val) const { return find_first(1, 0, n - 1, ql, qr, val); }
+    // 查询[ql,qr]中第一个满足 !(a[i] < val) 的下标，不存在返回-1
+    int find_first(int ql, int qr, const T& val) const { return find_first(1, 0, n - 1, ql, qr, val); }
 
-    // 查询[ql,qr]中最后一个满足条件的下标
-    int find_last(int ql, int qr, T val) const { return find_last(1, 0, n - 1, ql, qr, val); }
+    // 查询[ql,qr]中最后一个满足 !(a[i] < val) 的下标，不存在返回-1
+    int find_last(int ql, int qr, const T& val) const { return find_last(1, 0, n - 1, ql, qr, val); }
 };
+
+/*
+二分用法（0-based 闭区间）：
+    int first = tree.find_first(l, r, Info(val));
+    int last = tree.find_last(l, r, Info(val));
+
+operator< 返回 true 表示当前整段不可能包含答案，必须保证段内每个单点都不满足条件。
+当前示例按 sum 比较，查找单点值 >= val 时要求元素非负；含负数时不能这样剪枝。
+若要保证单点阈值二分 O(log n)，应维护区间最大值 mx，并比较 a.mx < b.mx。
+按 sum 比较虽可在非负数组上正确查找，但可能退化到 O(n)。
+固定左端点的前缀累计查询，需要额外维护已跳过区间的信息。
+*/
 
 // 线段树优化建图：原图点编号为 [0, n - 1]，区间均为闭区间 [l, r]
 // 支持 u -> [l, r]、[l, r] -> v，每次加边 O(log n)，建图 O(n)
@@ -222,7 +239,7 @@ Info operator+(const Info& a, const Info& b) {
 
 bool operator<(const Info& a, const Info& b) {
     return a.sum < b.sum;
-}
+}  // 线段树二分用，剪枝条件与上面的普通线段树相同
 
 template <typename Info>
 class DynamicSegmentTree {
@@ -324,5 +341,6 @@ ll cur = tree.get(i).sum;                     // 查询a[i]
 int first = tree.find_first(l, r, Info(val)); // 第一个满足条件的位置
 int last = tree.find_last(l, r, Info(val));   // 最后一个满足条件的位置
 
-每次操作时间复杂度O(log n)，空间复杂度O(修改次数 * log n)。
+单点更新、区间查询 O(log n)，空间 O(修改次数 * log n)。
+二分的剪枝要求同上：当前 sum 比较要求元素非负，最坏 O(n)；维护区间最大值可做到 O(log n)。
 */

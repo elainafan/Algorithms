@@ -60,7 +60,7 @@ struct CartesianTree {
     int par(int p) { return t[p].par; }
 };
 
-// 使用示例
+/* 使用示例
 CartesianTree<int, less<int>> ct;
 
 rep(i, 0, n - 1) { ct.add(i + 1, nums[i]); }
@@ -70,3 +70,4 @@ rep(i, 1, n) {
     int L = ct.Left(i);
     int R = ct.Right(i);
 }
+*/
