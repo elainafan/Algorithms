@@ -133,3 +133,123 @@ auto convexDiameter(const vector<Point>& p) -> ld {
 // convexDiameter(h) 要求 h 已按凸包顺序排列，通常写：
 // auto h = convexHull(p);
 // ld diameter = convexDiameter(h);
+
+// 整数坐标版本：凸包、面积符号和点包含使用精确的 ll 运算。
+// convexDiameter2 返回直径平方；需要实际长度时使用 convexDiameter。
+auto signedArea2(const vector<PointI>& p) -> ll {
+    ll res = 0;
+    for (int i = 0, n = p.size(); i < n; i++) {
+        res += cross(p[i], p[(i + 1) % n]);
+    }
+    return res;
+}
+
+auto area(const vector<PointI>& p) -> ld {
+    return fabsl((ld)signedArea2(p)) / 2;
+}
+
+auto perimeter(const vector<PointI>& p) -> ld {
+    ld res = 0;
+    for (int i = 0, n = p.size(); i < n; i++) {
+        res += dist(p[i], p[(i + 1) % n]);
+    }
+    return res;
+}
+
+auto pointInPolygon(const vector<PointI>& poly, const PointI& p) -> int {
+    bool in = false;
+    for (int i = 0, n = poly.size(); i < n; i++) {
+        const auto& a = poly[i];
+        const auto& b = poly[(i + 1) % n];
+        if (onSegment(p, a, b)) return 1;
+        auto c = cross(a, b, p);
+        if (a.y <= p.y && p.y < b.y && c > 0) in = !in;
+        if (b.y <= p.y && p.y < a.y && c < 0) in = !in;
+    }
+    return in ? 2 : 0;
+}
+
+auto centroid(const vector<PointI>& p) -> Point {
+    if (p.empty()) return {};
+    ld sum = 0;
+    Point res;
+    for (int i = 0, n = p.size(); i < n; i++) {
+        auto c = (ld)cross(p[i], p[(i + 1) % n]);
+        sum += c;
+        res = res + (toPoint(p[i]) + toPoint(p[(i + 1) % n])) * c;
+    }
+    if (sgn(sum) != 0) return res / (3 * sum);
+
+    res = {};
+    for (const auto& x : p) res = res + toPoint(x);
+    return res / p.size();
+}
+
+auto convexHull(vector<PointI> p) -> vector<PointI> {
+    sort(p.begin(), p.end());
+    p.erase(unique(p.begin(), p.end()), p.end());
+    if (p.size() <= 1) return p;
+
+    vector<PointI> h(2 * p.size());
+    int k = 0;
+    for (const auto& x : p) {
+        while (k >= 2 && cross(h[k - 2], h[k - 1], x) <= 0) k--;
+        h[k++] = x;
+    }
+    for (int i = int(p.size()) - 2, t = k + 1; i >= 0; i--) {
+        while (k >= t && cross(h[k - 2], h[k - 1], p[i]) <= 0) k--;
+        h[k++] = p[i];
+    }
+    h.resize(k - 1);
+    return h;
+}
+
+auto pointInConvex(const vector<PointI>& h, const PointI& p) -> int {
+    int n = h.size();
+    if (!n) return 0;
+    if (n == 1) return h[0] == p ? 1 : 0;
+    if (n == 2) return onSegment(p, h[0], h[1]) ? 1 : 0;
+
+    auto lside = cross(h[0], h[1], p);
+    auto rside = cross(h[0], h[n - 1], p);
+    if (lside < 0 || rside > 0) return 0;
+    if (lside == 0) return onSegment(p, h[0], h[1]) ? 1 : 0;
+    if (rside == 0) return onSegment(p, h[0], h[n - 1]) ? 1 : 0;
+
+    int l = 1, r = n - 1;
+    while (r - l > 1) {
+        int m = (l + r) / 2;
+        if (cross(h[0], h[m], p) >= 0)
+            l = m;
+        else
+            r = m;
+    }
+    auto side = cross(h[l], h[l + 1], p);
+    if (side < 0) return 0;
+    if (side == 0) return onSegment(p, h[l], h[l + 1]) ? 1 : 0;
+    return 2;
+}
+
+auto convexDiameter2(const vector<PointI>& p) -> ll {
+    int n = p.size();
+    if (n <= 1) return 0;
+    if (n == 2) return dist2(p[0], p[1]);
+
+    int j = 1;
+    ll ans = 0;
+    for (int i = 0; i < n; i++) {
+        int ni = (i + 1) % n;
+        while (llabs(cross(p[ni] - p[i], p[(j + 1) % n] - p[i]))
+             > llabs(cross(p[ni] - p[i], p[j] - p[i]))) {
+            j = (j + 1) % n;
+        }
+        ans = max({ans, dist2(p[i], p[j]), dist2(p[ni], p[j])});
+    }
+    return ans;
+}
+
+auto convexDiameter(const vector<PointI>& p) -> ld {
+    return sqrtl((ld)convexDiameter2(p));
+}
+
+// 用法：vector<PointI> 表示整数多边形；convexHull 和 pointInConvex 的约定与浮点版本相同。

@@ -89,3 +89,81 @@ auto rotate(const Point& p, ld rad) -> Point {
 // norm2(v) 是长度平方，length(v) 是向量长度，dist(a,b) 是两点距离。
 // perp(v) 将向量逆时针转 90°；rotate(v,rad) 按弧度旋转。
 // same(a,b) 使用 EPS 判等；operator== 是精确判等，只用于排序去重。
+
+// 整数坐标版本：坐标和基础运算均使用 ll，适合需要精确判断的场景。
+// norm2 / dist2 / dot / cross 的结果仍需保证不超出 ll；需要开方的结果返回 ld。
+struct PointI {
+    ll x = 0, y = 0;
+
+    auto operator+(const PointI& p) const -> PointI {
+        return {x + p.x, y + p.y};
+    }
+
+    auto operator-(const PointI& p) const -> PointI {
+        return {x - p.x, y - p.y};
+    }
+
+    auto operator*(ll k) const -> PointI {
+        return {x * k, y * k};
+    }
+
+    auto operator<(const PointI& p) const -> bool {
+        return x != p.x ? x < p.x : y < p.y;
+    }
+
+    auto operator==(const PointI& p) const -> bool {
+        return x == p.x && y == p.y;
+    }
+};
+
+auto operator*(ll k, const PointI& p) -> PointI {
+    return p * k;
+}
+
+auto toPoint(const PointI& p) -> Point {
+    return {(ld)p.x, (ld)p.y};
+}
+
+auto dot(const PointI& a, const PointI& b) -> ll {
+    return a.x * b.x + a.y * b.y;
+}
+
+auto cross(const PointI& a, const PointI& b) -> ll {
+    return a.x * b.y - a.y * b.x;
+}
+
+auto cross(const PointI& o, const PointI& a, const PointI& b) -> ll {
+    return cross(a - o, b - o);
+}
+
+auto norm2(const PointI& p) -> ll {
+    return dot(p, p);
+}
+
+auto length(const PointI& p) -> ld {
+    return sqrtl(max<ld>(0, (ld)norm2(p)));
+}
+
+auto dist(const PointI& a, const PointI& b) -> ld {
+    return length(a - b);
+}
+
+auto dist2(const PointI& a, const PointI& b) -> ll {
+    return norm2(a - b);
+}
+
+auto same(const PointI& a, const PointI& b) -> bool {
+    return a == b;
+}
+
+auto perp(const PointI& p) -> PointI {
+    return {-p.y, p.x};
+}
+
+auto rotate(const PointI& p, ld rad) -> Point {
+    return rotate(toPoint(p), rad);
+}
+
+// rotate 的结果一般不是整数，因此返回 Point；整数版本使用 perp 进行 90° 旋转。
+
+// 用法：PointI p{x,y}；dist2(a,b) 查询距离平方；其余点积、叉积和判等接口与 Point 对应。

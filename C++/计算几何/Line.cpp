@@ -104,3 +104,108 @@ auto segmentsIntersect(
 // segmentIntersection(a,b,c,d) 求两线段公共部分：
 // 空 vector 表示不交，1 个点表示相交或相切，2 个点表示重叠区间的两端。
 // 只需要判断是否相交时使用 segmentsIntersect(a,b,c,d)。
+
+// 整数坐标版本：谓词使用精确的 ll 运算；交点和距离等可能为非整数，返回 Point / ld。
+struct LineI {
+    PointI p, v;
+
+    LineI() = default;
+    LineI(const PointI& a, const PointI& b) : p(a), v(b - a) {}
+
+    static auto fromVector(const PointI& p, const PointI& v) -> LineI {
+        return LineI(p, p + v);
+    }
+};
+
+auto parallel(const LineI& a, const LineI& b) -> bool {
+    return cross(a.v, b.v) == 0;
+}
+
+auto onLine(const PointI& p, const LineI& l) -> bool {
+    return norm2(l.v) == 0 ? p == l.p : cross(l.v, p - l.p) == 0;
+}
+
+auto onSegment(const PointI& p, const PointI& a, const PointI& b) -> bool {
+    return cross(a, b, p) == 0 && dot(p - a, p - b) <= 0;
+}
+
+auto lineIntersection(const LineI& a, const LineI& b) -> optional<Point> {
+    auto d = cross(a.v, b.v);
+    if (d == 0) return nullopt;
+    ld t = (ld)cross(b.p - a.p, b.v) / d;
+    return toPoint(a.p) + toPoint(a.v) * t;
+}
+
+auto projection(const PointI& p, const LineI& l) -> Point {
+    auto d = norm2(l.v);
+    if (d == 0) return toPoint(l.p);
+    ld t = (ld)dot(p - l.p, l.v) / d;
+    return toPoint(l.p) + toPoint(l.v) * t;
+}
+
+auto reflection(const PointI& p, const LineI& l) -> Point {
+    return projection(p, l) * 2 - toPoint(p);
+}
+
+auto distanceToLine(const PointI& p, const LineI& l) -> ld {
+    auto d = norm2(l.v);
+    if (d == 0) return dist(p, l.p);
+    return fabsl((ld)cross(l.v, p - l.p)) / sqrtl((ld)d);
+}
+
+auto distanceToSegment(const PointI& p, const PointI& a, const PointI& b) -> ld {
+    auto v = b - a;
+    auto d = norm2(v);
+    if (d == 0) return dist(p, a);
+    ld t = (ld)dot(p - a, v) / d;
+    if (t <= 0) return dist(p, a);
+    if (t >= 1) return dist(p, b);
+    return dist(toPoint(p), projection(p, LineI(a, b)));
+}
+
+auto segmentIntersection(
+    const PointI& a, const PointI& b, const PointI& c, const PointI& d
+) -> vector<Point> {
+    auto sign = [](ll x) -> int { return (x > 0) - (x < 0); };
+    auto c1 = sign(cross(a, b, c));
+    auto c2 = sign(cross(a, b, d));
+    auto c3 = sign(cross(c, d, a));
+    auto c4 = sign(cross(c, d, b));
+    if (c1 * c2 < 0 && c3 * c4 < 0) {
+        return {*lineIntersection(LineI(a, b), LineI(c, d))};
+    }
+
+    vector<Point> res;
+    auto add = [&](const PointI& p) -> void {
+        auto q = toPoint(p);
+        for (const auto& x : res) {
+            if (same(q, x)) return;
+        }
+        res.push_back(q);
+    };
+    if (onSegment(a, c, d)) add(a);
+    if (onSegment(b, c, d)) add(b);
+    if (onSegment(c, a, b)) add(c);
+    if (onSegment(d, a, b)) add(d);
+    sort(res.begin(), res.end());
+    if (res.size() > 2) return {res.front(), res.back()};
+    return res;
+}
+
+auto segmentsIntersect(
+    const PointI& a, const PointI& b, const PointI& c, const PointI& d
+) -> bool {
+    auto sign = [](ll x) -> int { return (x > 0) - (x < 0); };
+    auto c1 = sign(cross(a, b, c));
+    auto c2 = sign(cross(a, b, d));
+    auto c3 = sign(cross(c, d, a));
+    auto c4 = sign(cross(c, d, b));
+    if (c1 * c2 < 0 && c3 * c4 < 0) return true;
+    return (c1 == 0 && onSegment(c, a, b))
+        || (c2 == 0 && onSegment(d, a, b))
+        || (c3 == 0 && onSegment(a, c, d))
+        || (c4 == 0 && onSegment(b, c, d));
+}
+
+// 用法：LineI / onLine / onSegment / segmentsIntersect 可全程保持整数判断；
+// lineIntersection、projection、reflection 和距离接口在结果不是整数时返回浮点值。

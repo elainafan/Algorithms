@@ -223,7 +223,9 @@ auto& g = graph.g;
 普通边 O(1)，每次点连区间或区间连点 O(log n)。
 */
 
-// 动态开点线段树
+// 动态开点线段树：同一个对象内维护多棵树，共用节点池和值域 [0,n-1]。
+// 初始有 0 号空树；merge(x,y) 将 y 并入 x，并清空 y。树编号、数组下标均为 0-based。
+// merge(x,y,l,r) 只合并并清空 y 的 [l,r]，两棵树的区间外部分均保持原值。
 struct Info {
     ll sum, pre, suf, ans;
     Info(ll x = 0) : sum(x), pre(x), suf(x), ans(x) {}
@@ -250,12 +252,17 @@ class DynamicSegmentTree {
 
     int n;
     vector<Node> tree;
+    vi root;
 
     Info merge_val(Info a, Info b) const { return a + b; }  // 合并子树
 
+    Info merge_leaf(Info a, Info b) const {
+        return Info(a.sum + b.sum);
+    }  // 同一位置的值相加；与左右区间拼接不同，使用其他 Info 时按题意修改
+
     int new_node() {
         tree.emplace_back();
-        return tree.size() - 1;
+        return sz(tree) - 1;
     }
 
     Info get_val(int node) const { return node == -1 ? Info() : tree[node].val; }
@@ -267,7 +274,7 @@ class DynamicSegmentTree {
             tree[node].val = val;
             return;
         }
-        int m = (l + r) / 2;
+        int m = l + (r - l) / 2;
         if (i <= m) {
             if (tree[node].left == -1) {
                 int child = new_node();
@@ -287,16 +294,51 @@ class DynamicSegmentTree {
     Info query(int node, int l, int r, int ql, int qr) const {
         if (node == -1 || r < ql || l > qr) return Info();
         if (ql <= l && r <= qr) return tree[node].val;
-        int m = (l + r) / 2;
+        int m = l + (r - l) / 2;
+        if (qr <= m) return query(tree[node].left, l, m, ql, qr);
+        if (ql > m) return query(tree[node].right, m + 1, r, ql, qr);
         Info l_res = query(tree[node].left, l, m, ql, qr);
         Info r_res = query(tree[node].right, m + 1, r, ql, qr);
         return merge_val(l_res, r_res);
     }  // 查询[ql,qr]的值
 
+    int merge_node(int x, int y, int l, int r) {
+        if (x == -1) return y;  // 空分支直接接过来，不复制节点
+        if (y == -1) return x;
+        if (l == r) {
+            tree[x].val = merge_leaf(tree[x].val, tree[y].val);
+            return x;
+        }
+        int m = l + (r - l) / 2;
+        tree[x].left = merge_node(tree[x].left, tree[y].left, l, m);
+        tree[x].right = merge_node(tree[x].right, tree[y].right, m + 1, r);
+        maintain(x);
+        return x;
+    }  // 两边都非空才递归；合并过程不开新节点
+
+    pair<int, int> merge_range(int x, int y, int l, int r, int ql, int qr) {
+        if (y == -1 || r < ql || qr < l) return {x, y};
+        if (ql <= l && r <= qr) return {merge_node(x, y, l, r), -1};
+        if (x == -1) x = new_node();  // 部分覆盖时不能直接接过整棵 y，只新建边界节点
+        int m = l + (r - l) / 2;
+
+        auto [xl, yl] = merge_range(tree[x].left, tree[y].left, l, m, ql, qr);
+        tree[x].left = xl;
+        tree[y].left = yl;
+        auto [xr, yr] = merge_range(tree[x].right, tree[y].right, m + 1, r, ql, qr);
+        tree[x].right = xr;
+        tree[y].right = yr;
+        // 递归可能扩容节点池，接收编号后再写回，不跨递归保留节点引用
+
+        maintain(x);
+        maintain(y);  // y 移走了区间内的值，也要重新维护统计信息
+        return {x, y};
+    }
+
     int find_first(int node, int l, int r, int ql, int qr, Info val) const {
         if (r < ql || l > qr || get_val(node) < val) return -1;
         if (l == r) return l;
-        int m = (l + r) / 2;
+        int m = l + (r - l) / 2;
         int left = node == -1 ? -1 : tree[node].left;
         int right = node == -1 ? -1 : tree[node].right;
         int res = find_first(left, l, m, ql, qr, val);
@@ -307,7 +349,7 @@ class DynamicSegmentTree {
     int find_last(int node, int l, int r, int ql, int qr, Info val) const {
         if (r < ql || l > qr || get_val(node) < val) return -1;
         if (l == r) return l;
-        int m = (l + r) / 2;
+        int m = l + (r - l) / 2;
         int left = node == -1 ? -1 : tree[node].left;
         int right = node == -1 ? -1 : tree[node].right;
         int res = find_last(right, m + 1, r, ql, qr, val);
@@ -316,31 +358,82 @@ class DynamicSegmentTree {
     }
 
 public:
-    DynamicSegmentTree(int n) : n(n), tree(1) {}
+    DynamicSegmentTree(int n) : n(n), root(1, -1) {}  // n > 0
 
-    void update(int i, Info val) { update(0, 0, n - 1, i, val); }  // 更新i处的值为val
+    int new_tree() {
+        root.push_back(-1);
+        return sz(root) - 1;
+    }  // 新建空树，返回树编号；同一对象内的所有树共享值域
 
-    Info query(int ql, int qr) const { return query(0, 0, n - 1, ql, qr); }  // 查询[ql,qr]的值
+    void update(int id, int i, Info val) {
+        if (root[id] == -1) root[id] = new_node();
+        update(root[id], 0, n - 1, i, val);
+    }  // 将 id 号树的 i 处赋值为 val
 
-    Info get(int i) const { return query(i, i); }  // 取出i处的值
+    void update(int i, Info val) { update(0, i, val); }
 
-    // 查询[ql,qr]中第一个满足条件的下标
-    int find_first(int ql, int qr, Info val) const { return find_first(0, 0, n - 1, ql, qr, val); }
+    Info query(int id, int ql, int qr) const { return query(root[id], 0, n - 1, ql, qr); }
 
-    // 查询[ql,qr]中最后一个满足条件的下标
-    int find_last(int ql, int qr, Info val) const { return find_last(0, 0, n - 1, ql, qr, val); }
+    Info query(int ql, int qr) const { return query(0, ql, qr); }
+
+    Info get(int id, int i) const { return query(id, i, i); }
+
+    Info get(int i) const { return get(0, i); }
+
+    void merge(int x, int y) {
+        root[x] = merge_node(root[x], root[y], 0, n - 1);
+        root[y] = -1;
+    }  // y 并入 x 后变为空树，之后仍可独立 update；要求 x != y
+
+    void merge(int x, int y, int ql, int qr) {
+        auto [a, b] = merge_range(root[x], root[y], 0, n - 1, ql, qr);
+        root[x] = a;
+        root[y] = b;
+    }  // 仅在 [ql,qr] 内执行 x[i] += y[i]、y[i] = 0；要求 x != y
+
+    // 查询 id 号树 [ql,qr] 中第一个满足条件的下标
+    int find_first(int id, int ql, int qr, Info val) const { return find_first(root[id], 0, n - 1, ql, qr, val); }
+
+    int find_first(int ql, int qr, Info val) const { return find_first(0, ql, qr, val); }
+
+    // 查询 id 号树 [ql,qr] 中最后一个满足条件的下标
+    int find_last(int id, int ql, int qr, Info val) const { return find_last(root[id], 0, n - 1, ql, qr, val); }
+
+    int find_last(int ql, int qr, Info val) const { return find_last(0, ql, qr, val); }
 };
 
 /*
 用法：
 
-DynamicSegmentTree<Info> tree(1'000'000'001); // 维护[0, 1e9]
-tree.update(i, Info(val));                    // a[i] = val
-ll res = tree.query(l, r).sum;                // 查询[l, r]
-ll cur = tree.get(i).sum;                     // 查询a[i]
-int first = tree.find_first(l, r, Info(val)); // 第一个满足条件的位置
-int last = tree.find_last(l, r, Info(val));   // 最后一个满足条件的位置
+DynamicSegmentTree<Info> tree(n);          // 维护 [0,n-1]，初始已有 0 号空树
+tree.update(i, Info(val));                 // 0 号树的 a[i] = val
+ll res = tree.query(l, r).sum;              // 查询 0 号树 [l,r]
+ll cur = tree.get(i).sum;                   // 查询 0 号树 a[i]
+int first = tree.find_first(l, r, Info(v));  // 0 号树中第一个满足条件的位置
+int last = tree.find_last(l, r, Info(v));    // 0 号树中最后一个满足条件的位置
 
-单点更新、区间查询 O(log n)，空间 O(修改次数 * log n)。
+int x = tree.new_tree();                   // 新建一棵空树
+int y = tree.new_tree();
+tree.update(x, p, Info(a));                // x 号树的 p 处赋值为 a
+tree.update(y, q, Info(b));                // y 号树的 q 处赋值为 b
+tree.merge(x, y, l, r);                   // [l,r] 内执行 x[i] += y[i]、y[i] = 0，区间外保持原值
+tree.merge(x, y);                          // 继续合并 y 的剩余部分，随后清空 y
+res = tree.query(x, l, r).sum;              // 查询合并后的 x 号树 [l,r]
+cur = tree.get(x, p).sum;
+first = tree.find_first(x, l, r, Info(v));  // 查询指定树的第一个 / 最后一个满足条件的位置
+last = tree.find_last(x, l, r, Info(v));
+tree.update(y, p, Info(a));                // y 可以重新使用，不会影响 x
+
+省略树编号的 update/query/get/find_first/find_last 都操作 0 号树。
+合并只能发生在同一对象的两棵树之间，要求树编号有效且 x != y；区间合并要求 0 <= l <= r < n。
+所有区间均为 0-based 闭区间；区间合并后 x、y 仍可各自更新、查询或继续合并。
+缺失节点代表默认的全零区间。merge_leaf 处理同一位置的合并，operator+ 处理左右区间的拼接。
+当前 Info 维护最大子段和，叶子相加后应重建 Info(a.sum+b.sum)，不能直接调用 operator+。
+
+单点更新、区间查询 O(log n)。设完整覆盖部分的合并中有 K 对节点同时非空：
+    整树合并 O(K+1)，不新建节点；区间合并 O(log n+K)，至多新建 O(log n) 个边界节点。
+合并后被替代的节点保留在节点池中，不回收。
+设整树合并 M 次、区间合并 S 次，全部合并的总时间为 O(总开点数+M+S log n)。
+空间 O(树的数量+总开点数)，总开点数为 O((单点修改次数+S) log n)。
 二分的剪枝要求同上：当前 sum 比较要求元素非负，最坏 O(n)；维护区间最大值可做到 O(log n)。
 */

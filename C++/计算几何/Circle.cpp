@@ -103,3 +103,49 @@ auto circleIntersectionArea(const Circle& a, const Circle& b) -> ld {
 // tangentPoints(p,c)：返回从点 p 向圆作切线的 0/1/2 个切点。
 // circumcircle(a,b,c)：返回三点外接圆；三点共线时返回 nullopt。
 // circleIntersectionArea(a,b)：返回两圆公共部分面积。
+
+// 整数坐标版本：圆心和半径使用 ll，整数关系判断使用平方距离，避免开方误差。
+// 交点、切点、外接圆和面积在结果不是整数时仍返回 Point / Circle / ld。
+struct CircleI {
+    PointI o;
+    ll r = 0;
+};
+
+auto pointCircleRelation(const PointI& p, const CircleI& c) -> int {
+    auto d2 = dist2(p, c.o);
+    auto r2 = c.r * c.r;
+    return (d2 > r2) - (d2 < r2);
+}
+
+auto lineCircleIntersection(const LineI& l, const CircleI& c)
+    -> vector<Point> {
+    Line line(toPoint(l.p), toPoint(l.p + l.v));
+    Circle circle{toPoint(c.o), (ld)c.r};
+    return lineCircleIntersection(line, circle);
+}
+
+auto circleIntersection(const CircleI& a, const CircleI& b)
+    -> vector<Point> {
+    Circle x{toPoint(a.o), (ld)a.r};
+    Circle y{toPoint(b.o), (ld)b.r};
+    return circleIntersection(x, y);
+}
+
+auto tangentPoints(const PointI& p, const CircleI& c) -> vector<Point> {
+    Circle circle{toPoint(c.o), (ld)c.r};
+    return tangentPoints(toPoint(p), circle);
+}
+
+auto circumcircle(const PointI& a, const PointI& b, const PointI& c)
+    -> optional<Circle> {
+    return circumcircle(toPoint(a), toPoint(b), toPoint(c));
+}
+
+auto circleIntersectionArea(const CircleI& a, const CircleI& b) -> ld {
+    Circle x{toPoint(a.o), (ld)a.r};
+    Circle y{toPoint(b.o), (ld)b.r};
+    return circleIntersectionArea(x, y);
+}
+
+// 用法：CircleI c{o,r} 表示整数圆；pointCircleRelation 使用精确平方距离判断，
+// 其余接口与浮点圆版本对应，返回值类型按可能出现的有理 / 浮点结果处理。
