@@ -134,10 +134,10 @@ auto convexDiameter(const vector<Point>& p) -> ld {
 // auto h = convexHull(p);
 // ld diameter = convexDiameter(h);
 
-// 整数坐标版本：凸包、面积符号和点包含使用精确的 ll 运算。
+// 整数坐标版本：凸包、面积符号和点包含使用精确的 i128 运算。
 // convexDiameter2 返回直径平方；需要实际长度时使用 convexDiameter。
-auto signedArea2(const vector<PointI>& p) -> ll {
-    ll res = 0;
+auto signedArea2(const vector<PointI>& p) -> i128 {
+    i128 res = 0;
     for (int i = 0, n = p.size(); i < n; i++) {
         res += cross(p[i], p[(i + 1) % n]);
     }
@@ -230,17 +230,17 @@ auto pointInConvex(const vector<PointI>& h, const PointI& p) -> int {
     return 2;
 }
 
-auto convexDiameter2(const vector<PointI>& p) -> ll {
+auto convexDiameter2(const vector<PointI>& p) -> i128 {
     int n = p.size();
     if (n <= 1) return 0;
     if (n == 2) return dist2(p[0], p[1]);
 
     int j = 1;
-    ll ans = 0;
+    i128 ans = 0;
     for (int i = 0; i < n; i++) {
         int ni = (i + 1) % n;
-        while (llabs(cross(p[ni] - p[i], p[(j + 1) % n] - p[i]))
-             > llabs(cross(p[ni] - p[i], p[j] - p[i]))) {
+        while (abs128(cross(p[ni] - p[i], p[(j + 1) % n] - p[i]))
+             > abs128(cross(p[ni] - p[i], p[j] - p[i]))) {
             j = (j + 1) % n;
         }
         ans = max({ans, dist2(p[i], p[j]), dist2(p[ni], p[j])});

@@ -104,11 +104,11 @@ auto circleIntersectionArea(const Circle& a, const Circle& b) -> ld {
 // circumcircle(a,b,c)：返回三点外接圆；三点共线时返回 nullopt。
 // circleIntersectionArea(a,b)：返回两圆公共部分面积。
 
-// 整数坐标版本：圆心和半径使用 ll，整数关系判断使用平方距离，避免开方误差。
+// 整数坐标版本：圆心和半径使用 i128，整数关系判断使用平方距离，避免开方误差。
 // 交点、切点、外接圆和面积在结果不是整数时仍返回 Point / Circle / ld。
 struct CircleI {
     PointI o;
-    ll r = 0;
+    i128 r = 0;
 };
 
 auto pointCircleRelation(const PointI& p, const CircleI& c) -> int {

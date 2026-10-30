@@ -105,7 +105,7 @@ auto segmentsIntersect(
 // 空 vector 表示不交，1 个点表示相交或相切，2 个点表示重叠区间的两端。
 // 只需要判断是否相交时使用 segmentsIntersect(a,b,c,d)。
 
-// 整数坐标版本：谓词使用精确的 ll 运算；交点和距离等可能为非整数，返回 Point / ld。
+// 整数坐标版本：谓词使用精确的 i128 运算；交点和距离等可能为非整数，返回 Point / ld。
 struct LineI {
     PointI p, v;
 
@@ -166,7 +166,7 @@ auto distanceToSegment(const PointI& p, const PointI& a, const PointI& b) -> ld 
 auto segmentIntersection(
     const PointI& a, const PointI& b, const PointI& c, const PointI& d
 ) -> vector<Point> {
-    auto sign = [](ll x) -> int { return (x > 0) - (x < 0); };
+    auto sign = [](i128 x) -> int { return (x > 0) - (x < 0); };
     auto c1 = sign(cross(a, b, c));
     auto c2 = sign(cross(a, b, d));
     auto c3 = sign(cross(c, d, a));
@@ -195,7 +195,7 @@ auto segmentIntersection(
 auto segmentsIntersect(
     const PointI& a, const PointI& b, const PointI& c, const PointI& d
 ) -> bool {
-    auto sign = [](ll x) -> int { return (x > 0) - (x < 0); };
+    auto sign = [](i128 x) -> int { return (x > 0) - (x < 0); };
     auto c1 = sign(cross(a, b, c));
     auto c2 = sign(cross(a, b, d));
     auto c3 = sign(cross(c, d, a));

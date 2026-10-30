@@ -90,10 +90,10 @@ auto rotate(const Point& p, ld rad) -> Point {
 // perp(v) 将向量逆时针转 90°；rotate(v,rad) 按弧度旋转。
 // same(a,b) 使用 EPS 判等；operator== 是精确判等，只用于排序去重。
 
-// 整数坐标版本：坐标和基础运算均使用 ll，适合需要精确判断的场景。
-// norm2 / dist2 / dot / cross 的结果仍需保证不超出 ll；需要开方的结果返回 ld。
+// 整数坐标版本：坐标和基础运算均使用 i128，适合需要精确判断的场景。
+// 需要开方的结果返回 ld；i128 来自 1.cpp。
 struct PointI {
-    ll x = 0, y = 0;
+    i128 x = 0, y = 0;
 
     auto operator+(const PointI& p) const -> PointI {
         return {x + p.x, y + p.y};
@@ -103,7 +103,7 @@ struct PointI {
         return {x - p.x, y - p.y};
     }
 
-    auto operator*(ll k) const -> PointI {
+    auto operator*(i128 k) const -> PointI {
         return {x * k, y * k};
     }
 
@@ -116,7 +116,7 @@ struct PointI {
     }
 };
 
-auto operator*(ll k, const PointI& p) -> PointI {
+auto operator*(i128 k, const PointI& p) -> PointI {
     return p * k;
 }
 
@@ -124,19 +124,19 @@ auto toPoint(const PointI& p) -> Point {
     return {(ld)p.x, (ld)p.y};
 }
 
-auto dot(const PointI& a, const PointI& b) -> ll {
+auto dot(const PointI& a, const PointI& b) -> i128 {
     return a.x * b.x + a.y * b.y;
 }
 
-auto cross(const PointI& a, const PointI& b) -> ll {
+auto cross(const PointI& a, const PointI& b) -> i128 {
     return a.x * b.y - a.y * b.x;
 }
 
-auto cross(const PointI& o, const PointI& a, const PointI& b) -> ll {
+auto cross(const PointI& o, const PointI& a, const PointI& b) -> i128 {
     return cross(a - o, b - o);
 }
 
-auto norm2(const PointI& p) -> ll {
+auto norm2(const PointI& p) -> i128 {
     return dot(p, p);
 }
 
@@ -148,7 +148,7 @@ auto dist(const PointI& a, const PointI& b) -> ld {
     return length(a - b);
 }
 
-auto dist2(const PointI& a, const PointI& b) -> ll {
+auto dist2(const PointI& a, const PointI& b) -> i128 {
     return norm2(a - b);
 }
 
@@ -158,6 +158,10 @@ auto same(const PointI& a, const PointI& b) -> bool {
 
 auto perp(const PointI& p) -> PointI {
     return {-p.y, p.x};
+}
+
+auto abs128(i128 x) -> i128 {
+    return x < 0 ? -x : x;
 }
 
 auto rotate(const PointI& p, ld rad) -> Point {
