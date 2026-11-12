@@ -46,6 +46,8 @@
 - ``Phi.cpp``：预处理欧拉函数
 
 ### 数据结构
+- [`STTable.cpp`](C++/数据结构/STTable.cpp)：ST 表，静态区间最值查询，可修改合并函数维护 GCD、按位与或按位或。
+- [`LCT.cpp`](C++/数据结构/LCT.cpp)：Link-Cut Tree，动态森林连边、断边、连通性、单点赋值与路径点权和。
 - ``Block.cpp``：分块
 - ``Monotone Stack``：单调栈
 - ``UnionFind.cpp``：并查集（带大小）
